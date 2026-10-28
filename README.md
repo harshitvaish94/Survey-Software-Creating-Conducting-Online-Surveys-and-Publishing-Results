@@ -17,7 +17,7 @@ This repository contains three documents describing the system:
 | Harshit Vaish | AIML – B Section |
 | Nakka Gopya | AIML – B Section |
 | Devika N | AIML – B Section |
-| Bhavya | AIML – B Section |
+| Bhavya K | AIML – B Section |
 
 ## Development Methodology
 The project follows the **Agile (Scrum)** methodology, with requirements, design, and testing aligned throughout development.
