@@ -61,3 +61,34 @@ a { color: var(--primary); }
 .who { display: inline-flex; align-items: center; padding: 0 8px; opacity: .85; font-size: .9rem; }
 .logout { background: transparent; color: #fff; border: 1px solid rgba(255, 255, 255, .6); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 1rem; }
 .logout:hover { background: rgba(255, 255, 255, .15); }
+
+
+/* Survey creation */
+.survey-card {
+  max-width: 640px;
+}
+
+.survey-card textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  resize: vertical;
+}
+
+.survey-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.survey-actions .btn {
+  flex: 1;
+}
+
+@media (max-width: 480px) {
+  .survey-actions {
+    flex-direction: column;
+  }
+}

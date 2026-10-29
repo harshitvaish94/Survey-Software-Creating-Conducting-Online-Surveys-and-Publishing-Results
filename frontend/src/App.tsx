@@ -5,6 +5,7 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import ProtectedRoute from './auth/ProtectedRoute'
 import { useAuth } from './auth/context'
+import SurveyCreate from './pages/SurveyCreate'
 
 export default function App() {
   const { user, signOut } = useAuth()
@@ -45,6 +46,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/surveys/new"
+            element={
+              <ProtectedRoute>
+                <SurveyCreate />
               </ProtectedRoute>
             }
           />
