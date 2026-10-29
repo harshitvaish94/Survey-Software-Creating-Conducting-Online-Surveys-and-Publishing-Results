@@ -25,12 +25,6 @@ export default function Dashboard() {
         <section className="hero">
           <h2>No surveys yet</h2>
           <p>Create your first survey to get started.</p>
-
-          <div className="hero-actions">
-            <Link to="/surveys/new" className="btn">
-              Create Survey
-            </Link>
-          </div>
         </section>
       ) : (
         <div className="survey-list">
@@ -43,7 +37,7 @@ export default function Dashboard() {
               <h2>{survey.title}</h2>
 
               <p>
-                {survey.status} · {survey.questions.length} question
+                {survey.status} Â· {survey.questions.length} question
                 {survey.questions.length === 1 ? '' : 's'}
               </p>
 

@@ -70,7 +70,7 @@ export default function App() {
             path="/surveys/new"
             element={
               <ProtectedRoute>
-                <SurveyCreate />
+                <SurveyCreate key="new" />
               </ProtectedRoute>
             }
           />
