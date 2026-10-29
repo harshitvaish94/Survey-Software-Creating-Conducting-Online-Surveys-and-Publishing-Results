@@ -1,17 +1,38 @@
-import { Routes, Route, Link } from 'react-router-dom'
+import { Routes, Route, NavLink, useNavigate } from 'react-router-dom'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import Dashboard from './pages/Dashboard'
+import ProtectedRoute from './auth/ProtectedRoute'
+import { useAuth } from './auth/context'
 
 export default function App() {
+  const { user, signOut } = useAuth()
+  const navigate = useNavigate()
+
+  function onLogout() {
+    signOut()
+    navigate('/')
+  }
+
   return (
     <>
       <nav className="nav">
-        <strong>Survey Management</strong>
+        <span className="brand">Survey Management</span>
         <div className="links">
-          <Link to="/">Home</Link>
-          <Link to="/login">Login</Link>
-          <Link to="/register">Register</Link>
+          <NavLink to="/" end>Home</NavLink>
+          {user ? (
+            <>
+              <NavLink to="/dashboard">Dashboard</NavLink>
+              <span className="who">{user.email}</span>
+              <button type="button" className="logout" onClick={onLogout}>Log out</button>
+            </>
+          ) : (
+            <>
+              <NavLink to="/login">Login</NavLink>
+              <NavLink to="/register">Register</NavLink>
+            </>
+          )}
         </div>
       </nav>
       <main className="container">
@@ -19,6 +40,14 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </main>
     </>
