@@ -1,14 +1,23 @@
 import { Link } from 'react-router-dom'
+import { useAuth } from '../auth/context'
 
 export default function Home() {
+  const { user } = useAuth()
+
   return (
     <>
       <section className="hero">
         <h1>Create, share and analyse surveys</h1>
         <p>Build surveys with different question types, share them with a link or QR code, and see the results as charts.</p>
         <div className="hero-actions">
-          <Link to="/register" className="btn">Get started</Link>
-          <Link to="/login" className="btn btn-outline">Log in</Link>
+          {user ? (
+            <Link to="/dashboard" className="btn">Go to dashboard</Link>
+          ) : (
+            <>
+              <Link to="/register" className="btn">Get started</Link>
+              <Link to="/login" className="btn btn-outline">Log in</Link>
+            </>
+          )}
         </div>
       </section>
       <section className="features">
