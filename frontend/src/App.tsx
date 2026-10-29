@@ -3,6 +3,7 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
+import CreateSurvey from './pages/CreateSurvey'
 import ProtectedRoute from './auth/ProtectedRoute'
 import { useAuth } from './auth/context'
 
@@ -24,6 +25,7 @@ export default function App() {
           {user ? (
             <>
               <NavLink to="/dashboard">Dashboard</NavLink>
+              <NavLink to="/surveys/new">Create survey</NavLink>
               <span className="who">{user.email}</span>
               <button type="button" className="logout" onClick={onLogout}>Log out</button>
             </>
@@ -40,14 +42,9 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/surveys/new" element={<ProtectedRoute><CreateSurvey key="new" /></ProtectedRoute>} />
+          <Route path="/surveys/:id/edit" element={<ProtectedRoute><CreateSurvey key="edit" /></ProtectedRoute>} />
         </Routes>
       </main>
     </>

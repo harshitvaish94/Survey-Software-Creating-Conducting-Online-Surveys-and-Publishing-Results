@@ -61,3 +61,19 @@ a { color: var(--primary); }
 .who { display: inline-flex; align-items: center; padding: 0 8px; opacity: .85; font-size: .9rem; }
 .logout { background: transparent; color: #fff; border: 1px solid rgba(255, 255, 255, .6); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 1rem; }
 .logout:hover { background: rgba(255, 255, 255, .15); }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.row-actions { display: flex; gap: 8px; }
+.form.wide { max-width: 720px; }
+.form textarea, .form select { padding: 10px 12px; font-size: 1rem; font-family: inherit; border: 1px solid var(--border); border-radius: 8px; width: 100%; background: #fff; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.q-card { display: flex; flex-direction: column; gap: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.q-card .row { margin-bottom: 0; }
+.form label.check { flex-direction: row; align-items: center; gap: 8px; }
+.form .check input { width: auto; }
+.btn-sm { padding: 6px 12px; font-size: .9rem; }
+.btn-danger { background: transparent; color: var(--danger); border-color: var(--danger); }
+.btn-danger:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+.survey-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+@media (max-width: 480px) { .grid2 { grid-template-columns: 1fr; } }
+.card-link { display: block; text-decoration: none; color: inherit; }
+.card-link:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(0, 0, 0, .08); }
