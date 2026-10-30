@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "module": "nodenext",
+    "rootDir": "./src",
     "moduleResolution": "nodenext",
     "resolvePackageJsonExports": true,
     "esModuleInterop": true,
@@ -11,7 +12,7 @@
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "target": "ES2023",
-    "types": ["node", "jest"],
+    "types": ["node"],
     "sourceMap": true,
     "outDir": "./dist",
     "incremental": true,
