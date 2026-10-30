@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { Survey } from './surveys/survey.entity';
 import { SurveysModule } from './surveys/surveys.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { SurveysModule } from './surveys/surveys.module';
       synchronize: true,
     }),
     SurveysModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

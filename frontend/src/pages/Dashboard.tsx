@@ -1,19 +1,27 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/context'
 import { listSurveys } from '../api/surveys'
 
+function greet(): string {
+  const h = new Date().getHours()
+  if (h < 12) return 'Good morning'
+  if (h < 18) return 'Good afternoon'
+  return 'Good evening'
+}
+
 export default function Dashboard() {
   const { user } = useAuth()
+  const [greeting] = useState(greet)
   const surveys = listSurveys()
+  const name = user ? user.email.split('@')[0] : ''
 
   return (
     <>
       <div className="row">
         <div>
-          <h1>Dashboard</h1>
-          <p>
-            Signed in as <strong>{user?.email}</strong>
-          </p>
+          <h1>{greeting}, {name}</h1>
+          <p className="lead">Here are your surveys.</p>
         </div>
 
         <Link to="/surveys/new" className="btn">
@@ -22,9 +30,15 @@ export default function Dashboard() {
       </div>
 
       {surveys.length === 0 ? (
-        <section className="hero">
-          <h2>No surveys yet</h2>
-          <p>Create your first survey to get started.</p>
+        <section className="empty">
+          <h2>Nothing here yet</h2>
+          <p>
+            Your first survey takes about two minutes.
+            Start with a title and add questions as you go.
+          </p>
+          <Link to="/surveys/new" className="btn">
+            Create your first survey
+          </Link>
         </section>
       ) : (
         <div className="survey-list">
@@ -32,16 +46,15 @@ export default function Dashboard() {
             <Link
               key={survey.id}
               to={`/surveys/${survey.id}/edit`}
-              className="feature card-link"
+              className="survey-card"
             >
+              <span className="chip">{survey.status}</span>
               <h2>{survey.title}</h2>
-
               <p>
-                {survey.status} Â· {survey.questions.length} question
-                {survey.questions.length === 1 ? '' : 's'}
+                {survey.questions.length}{' '}
+                {survey.questions.length === 1 ? 'question' : 'questions'}
               </p>
-
-              <p className="hint">Click to edit</p>
+              <span className="edit-hint">Edit survey</span>
             </Link>
           ))}
         </div>
