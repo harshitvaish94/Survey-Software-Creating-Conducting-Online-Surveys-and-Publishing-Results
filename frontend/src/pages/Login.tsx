@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { login } from '../api/auth'
 import { useAuth } from '../auth/context'
+import AuthShell from '../components/AuthShell'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -29,36 +30,40 @@ export default function Login() {
   }
 
   return (
-    <div className="auth-card">
-      <form className="form" onSubmit={onSubmit}>
-        <h1>Log in</h1>
-        <label>
-          Email
-          <input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        </label>
-        <label>
-          Password
-          <div className="pw">
-            <input
-              type={show ? 'text' : 'password'}
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            <button type="button" className="link-btn" onClick={() => setShow(!show)}>
-              {show ? 'Hide' : 'Show'}
-            </button>
-          </div>
-        </label>
-        {error && <p className="error" role="alert">{error}</p>}
-        <button type="submit" className="btn" disabled={loading}>
-          {loading ? 'Logging in...' : 'Log in'}
-        </button>
-        <p className="switch">
-          New here? <Link to="/register">Create an account</Link>
-        </p>
-      </form>
-    </div>
+    <AuthShell>
+      <div className="auth-card">
+        <h1>Welcome back</h1>
+        <p className="lead">Log in to pick up your surveys where you left them.</p>
+        <form className="form" onSubmit={onSubmit}>
+          <label>
+            Email
+            <input type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </label>
+          <label>
+            Password
+            <div className="pw">
+              <input
+                type={show ? 'text' : 'password'}
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button type="button" className="link-btn" onClick={() => setShow(!show)}>
+                {show ? 'Hide' : 'Show'}
+              </button>
+            </div>
+          </label>
+          {error && <p className="error" role="alert">{error}</p>}
+          <button type="submit" className="btn" disabled={loading}>
+            {loading ? 'Logging in...' : 'Log in'}
+          </button>
+          <p className="switch">
+            New here? <Link to="/register">Create an account</Link>
+          </p>
+        </form>
+        <p className="hint assure">Only you can see and edit your surveys.</p>
+      </div>
+    </AuthShell>
   )
 }
