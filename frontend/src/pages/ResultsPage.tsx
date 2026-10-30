@@ -21,12 +21,46 @@ export default function ResultsPage() {
       });
   }, [id]);
 
+  const handleExportCSV = async () => {
+    try {
+      const response = await fetch(`/api/surveys/${id}/export/csv`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (!response.ok) throw new Error('Export failed');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `survey-${id}-results.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error('Failed to export CSV:', err);
+    }
+  };
+
   if (loading) return <div className="p-6">Loading results and charts...</div>;
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-2">{data.title} - Results & Charts</h1>
-      <p className="text-gray-600 mb-6">Total Responses: <strong>{data.totalResponses}</strong></p>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold mb-1">{data.title} - Results & Charts</h1>
+          <p className="text-gray-600">Total Responses: <strong>{data.totalResponses}</strong></p>
+        </div>
+        <button
+          onClick={handleExportCSV}
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition shadow"
+        >
+          Export CSV
+        </button>
+      </div>
 
       {data.questions.map((q: any, index: number) => (
         <div key={q.id} className="bg-white p-4 shadow rounded mb-6 border">
