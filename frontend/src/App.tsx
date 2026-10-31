@@ -7,6 +7,8 @@ import CreateSurvey from './pages/CreateSurvey'
 import ProtectedRoute from './auth/ProtectedRoute'
 import { useAuth } from './auth/context'
 import SurveyCreate from './pages/SurveyCreate'
+import SurveyPreview from './pages/SurveyPreview'
+import SurveyRespond from './pages/SurveyRespond'
 
 function Mark() {
   return (
@@ -92,6 +94,19 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* SMS-17: Preview how respondents see a survey */}
+          <Route
+            path="/surveys/:id/preview"
+            element={
+              <ProtectedRoute>
+                <SurveyPreview />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* SMS-18: Public respondent page for published surveys */}
+          <Route path="/s/:id" element={<SurveyRespond />} />
         </Routes>
       </main>
     </>

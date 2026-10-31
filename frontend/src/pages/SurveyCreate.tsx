@@ -13,11 +13,13 @@ const [closeDate, setCloseDate] = useState('');
 const [error, setError] = useState('');
 const [success, setSuccess] = useState('');
 const [saving, setSaving] = useState(false);
+const [createdId, setCreatedId] = useState<number | null>(null);
 
 async function handleSubmit(event: FormEvent<HTMLFormElement>) {
 event.preventDefault();
 setError('');
 setSuccess('');
+setCreatedId(null);
 
 
 const trimmedTitle = title.trim();
@@ -58,6 +60,7 @@ try {
     throw new Error(message || 'Unable to create the survey.');
   }
 
+  setCreatedId(data.id);
   setSuccess(
     `Survey "${data.title}" was saved successfully with Draft status. ID: ${data.id}`,
   );
@@ -149,9 +152,19 @@ return ( <section className="auth-card survey-card"> <h1>Create a Survey</h1> <p
       </button>
     </div>
 
-    {success && (
+    {success && createdId !== null && (
       <button
         className="btn"
+        type="button"
+        onClick={() => navigate(`/surveys/${createdId}/edit`)}
+      >
+        Add questions
+      </button>
+    )}
+
+    {success && (
+      <button
+        className="btn btn-outline"
         type="button"
         onClick={() => navigate('/dashboard')}
       >

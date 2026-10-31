@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/context'
 import { listSurveys } from '../api/surveys'
+import type { Survey } from '../api/surveys'
 
 function greet(): string {
   const h = new Date().getHours()
@@ -10,11 +11,29 @@ function greet(): string {
   return 'Good evening'
 }
 
+type State =
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'ready'; surveys: Survey[] }
+
 export default function Dashboard() {
   const { user } = useAuth()
   const [greeting] = useState(greet)
-  const surveys = listSurveys()
+  const [state, setState] = useState<State>({ status: 'loading' })
   const name = user ? user.email.split('@')[0] : ''
+
+  useEffect(() => {
+    let cancelled = false
+    listSurveys()
+      .then((surveys) => !cancelled && setState({ status: 'ready', surveys }))
+      .catch((err) =>
+        !cancelled &&
+        setState({ status: 'error', message: err instanceof Error ? err.message : 'Unable to load surveys.' }),
+      )
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   return (
     <>
@@ -29,7 +48,10 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {surveys.length === 0 ? (
+      {state.status === 'loading' && <p role="status">Loading surveys...</p>}
+      {state.status === 'error' && <p className="error" role="alert">{state.message}</p>}
+
+      {state.status === 'ready' && state.surveys.length === 0 && (
         <section className="empty">
           <h2>Nothing here yet</h2>
           <p>
@@ -40,9 +62,11 @@ export default function Dashboard() {
             Create your first survey
           </Link>
         </section>
-      ) : (
+      )}
+
+      {state.status === 'ready' && state.surveys.length > 0 && (
         <div className="survey-list">
-          {surveys.map((survey) => (
+          {state.surveys.map((survey) => (
             <Link
               key={survey.id}
               to={`/surveys/${survey.id}/edit`}
