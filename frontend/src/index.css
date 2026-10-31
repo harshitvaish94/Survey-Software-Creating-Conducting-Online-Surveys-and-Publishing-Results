@@ -202,7 +202,7 @@ a { color: var(--cobalt); }
 @media (max-width: 860px) {
   .form.builder { grid-template-columns: 1fr; }
   .builder-side { position: static; }
-
+}
 
 /* SMS-16: Survey creation form */
 .auth-card.survey-card {
@@ -230,3 +230,14 @@ a { color: var(--cobalt); }
     flex-direction: column;
   }
 }
+
+/* SMS-17: question types, rating config, respondent inputs */
+.q-errors { margin: 0; padding: 8px 12px 8px 28px; color: var(--danger); background: #ffe9ed; border: 2px solid var(--danger); border-radius: 12px; }
+.rating-config { display: flex; flex-direction: column; gap: 12px; }
+.form .rating-config label { max-width: 220px; }
+.respond { max-width: 720px; margin: 0 auto; }
+.resp-q { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 18px; min-width: 0; background: #fff; border: 2px solid var(--ink); border-radius: 18px; box-shadow: 4px 4px 0 var(--line); }
+.resp-q legend { padding: 0 8px; font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; }
+.resp-q select, .resp-q textarea { width: 100%; padding: 12px 14px; font: inherit; background: #fff; border: 2px solid var(--line); border-radius: 12px; }
+.resp-q .options { margin: 0; }
+.rating-ends { display: flex; justify-content: space-between; color: var(--muted); font-size: .875rem; }

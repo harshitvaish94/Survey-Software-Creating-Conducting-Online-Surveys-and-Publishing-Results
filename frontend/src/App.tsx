@@ -7,6 +7,7 @@ import CreateSurvey from './pages/CreateSurvey'
 import ProtectedRoute from './auth/ProtectedRoute'
 import { useAuth } from './auth/context'
 import SurveyCreate from './pages/SurveyCreate'
+import SurveyPreview from './pages/SurveyPreview'
 
 function Mark() {
   return (
@@ -89,6 +90,16 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <CreateSurvey key="edit" />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* SMS-17: Preview how respondents see a survey */}
+          <Route
+            path="/surveys/:id/preview"
+            element={
+              <ProtectedRoute>
+                <SurveyPreview />
               </ProtectedRoute>
             }
           />

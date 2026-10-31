@@ -4,7 +4,10 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import type { Relation } from 'typeorm';
+import { Question } from './question.entity';
 
 export enum SurveyStatus {
   DRAFT = 'Draft',
@@ -41,4 +44,7 @@ export class Survey {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @OneToMany(() => Question, (question) => question.survey)
+  questions: Relation<Question[]>;
 }
