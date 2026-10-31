@@ -6,12 +6,14 @@ interface Props {
   index: number
   total: number
   errors?: string[]
+  /** True for published surveys: every control is disabled. */
+  readOnly?: boolean
   onChange: (q: EditorQuestion) => void
   onDelete: () => void
   onMove: (direction: -1 | 1) => void
 }
 
-export default function QuestionEditor({ q, index, total, errors = [], onChange, onDelete, onMove }: Props) {
+export default function QuestionEditor({ q, index, total, errors = [], readOnly = false, onChange, onDelete, onMove }: Props) {
   const set = (patch: Partial<EditorQuestion>) => onChange({ ...q, ...patch })
   const setOption = (i: number, value: string) =>
     set({ options: q.options.map((o, k) => (k === i ? value : o)) })
@@ -24,7 +26,8 @@ export default function QuestionEditor({ q, index, total, errors = [], onChange,
   const maxChoices = ratingScale(q.ratingMin + 1, RATING_ABSOLUTE_MAX)
 
   return (
-    <div className="q-card">
+    <fieldset className="q-card" disabled={readOnly}>
+      <legend className="sr-only">Question {index + 1}</legend>
       <div className="q-head">
         <span className="q-num">{index + 1}</span>
         <input
@@ -34,6 +37,7 @@ export default function QuestionEditor({ q, index, total, errors = [], onChange,
           value={q.text}
           onChange={(e) => set({ text: e.target.value })}
         />
+        {q.mandatory ? <span className="chip req-chip">Required</span> : <span className="chip opt-chip">Optional</span>}
         <div className="row-actions">
           <button type="button" className="icon-btn" disabled={index === 0} onClick={() => onMove(-1)} aria-label="Move up">↑</button>
           <button type="button" className="icon-btn" disabled={index === total - 1} onClick={() => onMove(1)} aria-label="Move down">↓</button>
@@ -105,6 +109,17 @@ export default function QuestionEditor({ q, index, total, errors = [], onChange,
 
       {q.type === 'text' && <p className="text-preview">Respondents type their answer here.</p>}
 
+      <div className="req-toggle" role="radiogroup" aria-label="Answer requirement">
+        <label className={q.mandatory ? 'opt sm on' : 'opt sm'}>
+          <input type="radio" name={`required-${q.uid}`} checked={q.mandatory} onChange={() => set({ mandatory: true })} />
+          Required
+        </label>
+        <label className={!q.mandatory ? 'opt sm on' : 'opt sm'}>
+          <input type="radio" name={`required-${q.uid}`} checked={!q.mandatory} onChange={() => set({ mandatory: false })} />
+          Optional
+        </label>
+      </div>
+
       {errors.length > 0 && (
         <ul className="q-errors" role="alert">
           {errors.map((m) => (
@@ -112,6 +127,6 @@ export default function QuestionEditor({ q, index, total, errors = [], onChange,
           ))}
         </ul>
       )}
-    </div>
+    </fieldset>
   )
 }

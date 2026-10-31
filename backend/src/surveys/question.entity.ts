@@ -51,4 +51,8 @@ export class Question {
 
   @Column({ type: 'int', nullable: true })
   ratingMax: number | null;
+
+  /** Respondents must answer mandatory questions before they can submit. */
+  @Column({ type: 'boolean', default: false })
+  mandatory: boolean;
 }

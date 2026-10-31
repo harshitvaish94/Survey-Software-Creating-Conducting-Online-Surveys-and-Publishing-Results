@@ -24,6 +24,7 @@ export interface QuestionConfigInput {
   options?: string[] | null;
   ratingMin?: number | null;
   ratingMax?: number | null;
+  mandatory?: boolean | null;
 }
 
 export interface NormalizedQuestion {
@@ -32,6 +33,8 @@ export interface NormalizedQuestion {
   options: string[] | null;
   ratingMin: number | null;
   ratingMax: number | null;
+  /** undefined means "not supplied": keep the stored value, or false for new questions. */
+  mandatory?: boolean;
 }
 
 /** Returns validation messages (empty when valid) and the cleaned question. */
@@ -56,7 +59,14 @@ export function checkQuestion(
     );
     return {
       errors,
-      value: { text, type, options: null, ratingMin: null, ratingMax: null },
+      value: {
+        text,
+        type,
+        options: null,
+        ratingMin: null,
+        ratingMax: null,
+        mandatory: input.mandatory ?? undefined,
+      },
     };
   }
 
@@ -100,7 +110,17 @@ export function checkQuestion(
     }
   }
 
-  return { errors, value: { text, type, options, ratingMin, ratingMax } };
+  return {
+    errors,
+    value: {
+      text,
+      type,
+      options,
+      ratingMin,
+      ratingMax,
+      mandatory: input.mandatory ?? undefined,
+    },
+  };
 }
 
 /** Validates and normalizes a question, throwing 400 with all messages. */

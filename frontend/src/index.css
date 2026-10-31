@@ -202,7 +202,7 @@ a { color: var(--cobalt); }
 @media (max-width: 860px) {
   .form.builder { grid-template-columns: 1fr; }
   .builder-side { position: static; }
-}
+
 
 /* SMS-16: Survey creation form */
 .auth-card.survey-card {
@@ -230,6 +230,7 @@ a { color: var(--cobalt); }
     flex-direction: column;
   }
 }
+}
 
 /* SMS-17: question types, rating config, respondent inputs */
 .q-errors { margin: 0; padding: 8px 12px 8px 28px; color: var(--danger); background: #ffe9ed; border: 2px solid var(--danger); border-radius: 12px; }
@@ -241,3 +242,19 @@ a { color: var(--cobalt); }
 .resp-q select, .resp-q textarea { width: 100%; padding: 12px 14px; font: inherit; background: #fff; border: 2px solid var(--line); border-radius: 12px; }
 .resp-q .options { margin: 0; }
 .rating-ends { display: flex; justify-content: space-between; color: var(--muted); font-size: .875rem; }
+
+/* SMS-18: required / optional */
+.req-toggle { display: flex; flex-wrap: wrap; gap: 8px; }
+.req-chip { background: var(--cobalt); color: #fff; }
+.opt-chip { background: #fff; color: var(--muted); }
+.req-mark { color: var(--danger); font-weight: 800; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* SMS-19: read-only questions and confirm dialog */
+fieldset.q-card { min-width: 0; margin: 0; }
+fieldset.q-card:disabled { opacity: .75; background: var(--paper); }
+.add-q:disabled { opacity: .5; cursor: default; }
+.dialog-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: rgba(18, 23, 43, .55); }
+.dialog { display: flex; flex-direction: column; gap: 8px; width: min(440px, 100%); padding: 24px; background: #fff; border: 2px solid var(--ink); border-radius: 20px; box-shadow: 6px 6px 0 var(--ink); }
+.dialog p { margin: 0 0 8px; color: var(--muted); }
+.dialog .row-actions { justify-content: flex-end; }

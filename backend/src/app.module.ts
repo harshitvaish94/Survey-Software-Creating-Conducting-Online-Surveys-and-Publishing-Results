@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { Question } from './surveys/question.entity';
+import { SurveyResponse } from './surveys/response.entity';
 import { Survey } from './surveys/survey.entity';
 import { SurveysModule } from './surveys/surveys.module';
 import { HealthModule } from './health/health.module';
@@ -16,7 +17,7 @@ import { HealthModule } from './health/health.module';
       username: process.env.DB_USER || 'sms',
       password: process.env.DB_PASSWORD || 'sms_password',
       database: process.env.DB_NAME || 'sms_db',
-      entities: [Survey, Question],
+      entities: [Survey, Question, SurveyResponse],
       synchronize: true,
     }),
     SurveysModule,

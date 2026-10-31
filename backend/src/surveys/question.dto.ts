@@ -1,6 +1,7 @@
 import {
   ArrayMaxSize,
   IsArray,
+  IsBoolean,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -37,4 +38,9 @@ export class QuestionInputDto {
   @IsOptional()
   @IsInt()
   ratingMax?: number;
+
+  /** Defaults to false (optional) for new questions; preserved when omitted on edit. */
+  @IsOptional()
+  @IsBoolean()
+  mandatory?: boolean;
 }

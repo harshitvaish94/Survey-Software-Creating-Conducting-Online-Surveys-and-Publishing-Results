@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import ConfirmDialog from '../components/ConfirmDialog'
 import QuestionEditor from '../components/QuestionEditor'
-import { getSurvey, updateSurvey } from '../api/surveys'
+import { ApiError } from '../api/http'
+import { deleteQuestion, getSurvey, publishSurvey, reorderQuestions, updateSurvey } from '../api/surveys'
+import type { SurveyStatus } from '../api/surveys'
 import { newEditorQuestion, toEditorQuestion } from '../lib/questions'
 import type { EditorQuestion } from '../lib/questions'
 import { validateQuestion, validateSurveyForm } from '../lib/questionValidation'
@@ -26,6 +29,9 @@ export default function CreateSurvey() {
   const [success, setSuccess] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [status, setStatus] = useState<SurveyStatus>('Draft')
+  const [busy, setBusy] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -37,6 +43,7 @@ export default function CreateSurvey() {
         setOpenDate(s.openDate ?? '')
         setCloseDate(s.closeDate ?? '')
         setQuestions(s.questions.map(toEditorQuestion))
+        setStatus(s.status)
         setLoad({ status: 'ready' })
       })
       .catch((err) => {
@@ -60,11 +67,62 @@ export default function CreateSurvey() {
   }
 
   const update = (i: number, q: EditorQuestion) => setQuestions(questions.map((x, k) => (k === i ? q : x)))
-  const remove = (i: number) => setQuestions(questions.filter((_, k) => k !== i))
-  const move = (i: number, d: -1 | 1) => {
+  const readOnly = status !== 'Draft'
+  const message = (err: unknown, fallback: string) => (err instanceof Error ? err.message : fallback)
+  const savedIds = (list: EditorQuestion[]) => list.filter((q) => q.id != null).map((q) => q.id as number)
+
+  /** Moves a question locally, then saves the new order of the stored questions right away. */
+  async function move(i: number, d: -1 | 1) {
+    if (busy || readOnly) return
+    const previous = questions
     const next = [...questions]
     ;[next[i], next[i + d]] = [next[i + d], next[i]]
     setQuestions(next)
+    setSuccess('')
+    setErrors([])
+
+    const ids = savedIds(next)
+    if (ids.length < 2 || ids.join() === savedIds(previous).join()) return
+    setBusy(true)
+    try {
+      await reorderQuestions(surveyId, ids)
+      setSuccess('Question order saved.')
+    } catch (err) {
+      setQuestions(previous)
+      setErrors([message(err, 'Unable to save the new order.')])
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /** Runs after the user confirms. Stored questions are deleted on the server first. */
+  async function confirmDelete() {
+    const target = questions.find((q) => q.uid === pendingDelete)
+    setPendingDelete(null)
+    if (!target) return
+    setSuccess('')
+    setErrors([])
+    const dropLocally = () => setQuestions((list) => list.filter((q) => q.uid !== target.uid))
+
+    if (target.id == null) {
+      dropLocally()
+      return
+    }
+    setBusy(true)
+    try {
+      await deleteQuestion(surveyId, target.id)
+      dropLocally()
+      setSuccess('Question deleted.')
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) {
+        dropLocally()
+        setErrors(['That question no longer exists, so it was removed from the list.'])
+      } else {
+        setErrors([message(err, 'Unable to delete the question.')])
+      }
+    } finally {
+      setBusy(false)
+    }
   }
 
   const checks = [
@@ -73,14 +131,13 @@ export default function CreateSurvey() {
     { label: 'Dates make sense', ok: !openDate || !closeDate || closeDate >= openDate },
   ]
 
-  async function onSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  async function save(): Promise<boolean> {
     setSuccess('')
     setSubmitted(true)
     const problems = validateSurveyForm({ title, openDate, closeDate, questions })
     if (problems.length > 0) {
       setErrors(problems)
-      return
+      return false
     }
     setErrors([])
     setSaving(true)
@@ -88,8 +145,36 @@ export default function CreateSurvey() {
       const saved = await updateSurvey(surveyId, { title, description, openDate, closeDate, questions })
       setQuestions(saved.questions.map(toEditorQuestion))
       setSuccess('Survey saved.')
+      return true
     } catch (err) {
       setErrors([err instanceof Error ? err.message : 'Something went wrong'])
+      return false
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    await save()
+  }
+
+  async function onPublish() {
+    if (questions.length === 0) {
+      setErrors(['Add at least one question before publishing.'])
+      return
+    }
+    if (!window.confirm('Publish this survey? Respondents can answer it and its questions can no longer be changed.')) {
+      return
+    }
+    if (!(await save())) return
+    setSaving(true)
+    try {
+      const published = await publishSurvey(surveyId)
+      setStatus(published.status)
+      setSuccess('Survey published.')
+    } catch (err) {
+      setErrors([err instanceof Error ? err.message : 'Unable to publish the survey.'])
     } finally {
       setSaving(false)
     }
@@ -101,6 +186,11 @@ export default function CreateSurvey() {
         <header>
           <h1>Edit survey</h1>
           <p className="lead">Add the basics, then build your questions. Your survey is saved as a draft.</p>
+          {readOnly && (
+            <p className="hint" role="status">
+              This survey is {status.toLowerCase()}, so its questions can no longer be edited, reordered or deleted.
+            </p>
+          )}
         </header>
 
         <section className="panel">
@@ -141,13 +231,14 @@ export default function CreateSurvey() {
                 index={i}
                 total={questions.length}
                 errors={submitted ? validateQuestion(q) : []}
+                readOnly={readOnly}
                 onChange={(nq) => update(i, nq)}
-                onDelete={() => remove(i)}
+                onDelete={() => setPendingDelete(q.uid)}
                 onMove={(d) => move(i, d)}
               />
             ))}
           </div>
-          <button type="button" className="add-q" onClick={() => setQuestions([...questions, newEditorQuestion()])}>
+          <button type="button" className="add-q" disabled={readOnly} onClick={() => setQuestions([...questions, newEditorQuestion()])}>
             + Add a question
           </button>
         </section>
@@ -158,7 +249,7 @@ export default function CreateSurvey() {
           <h2 className="summary-title">{title.trim() || 'Untitled survey'}</h2>
           <p className="summary-desc">{description.trim() || 'No description yet.'}</p>
           <p className="summary-meta">
-            {questions.length} {questions.length === 1 ? 'question' : 'questions'}
+            {questions.length} {questions.length === 1 ? 'question' : 'questions'}, {questions.filter((q) => q.mandatory).length} required
           </p>
           <p className="summary-meta">
             {openDate || closeDate
@@ -181,13 +272,32 @@ export default function CreateSurvey() {
             </div>
           )}
           {success && <p className="ok" role="status">{success}</p>}
-          <button type="submit" className="btn" disabled={saving}>
+          <button type="submit" className="btn" disabled={saving || busy || readOnly}>
             {saving ? 'Saving...' : 'Save changes'}
           </button>
+          {status === 'Draft' ? (
+            <button type="button" className="btn btn-outline" disabled={saving || busy} onClick={onPublish}>
+              Publish survey
+            </button>
+          ) : (
+            <p className="summary-meta">
+              Status: {status}. Respondent link: <Link to={`/s/${surveyId}`}>/s/{surveyId}</Link>
+            </p>
+          )}
           <Link to={`/surveys/${surveyId}/preview`} className="btn btn-outline">Preview</Link>
           <Link to="/dashboard" className="link-btn">Back to dashboard</Link>
         </div>
       </aside>
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title="Delete this question?"
+          message="The question and its settings will be removed. This cannot be undone."
+          confirmLabel="Delete question"
+          onConfirm={confirmDelete}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
     </form>
   )
 }
