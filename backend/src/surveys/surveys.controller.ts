@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Param,
   ParseIntPipe,
   Post,
@@ -28,6 +29,12 @@ export class SurveysController {
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.surveysService.findOne(id);
+  }
+
+  @Post(':id/publish')
+  @HttpCode(200)
+  publish(@Param('id', ParseIntPipe) id: number) {
+    return this.surveysService.publish(id);
   }
 
   @Put(':id')

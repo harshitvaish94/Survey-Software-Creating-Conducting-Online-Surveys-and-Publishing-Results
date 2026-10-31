@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import QuestionEditor from '../components/QuestionEditor'
-import { getSurvey, updateSurvey } from '../api/surveys'
+import { getSurvey, publishSurvey, updateSurvey } from '../api/surveys'
+import type { SurveyStatus } from '../api/surveys'
 import { newEditorQuestion, toEditorQuestion } from '../lib/questions'
 import type { EditorQuestion } from '../lib/questions'
 import { validateQuestion, validateSurveyForm } from '../lib/questionValidation'
@@ -26,6 +27,7 @@ export default function CreateSurvey() {
   const [success, setSuccess] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [status, setStatus] = useState<SurveyStatus>('Draft')
 
   useEffect(() => {
     let cancelled = false
@@ -37,6 +39,7 @@ export default function CreateSurvey() {
         setOpenDate(s.openDate ?? '')
         setCloseDate(s.closeDate ?? '')
         setQuestions(s.questions.map(toEditorQuestion))
+        setStatus(s.status)
         setLoad({ status: 'ready' })
       })
       .catch((err) => {
@@ -73,14 +76,13 @@ export default function CreateSurvey() {
     { label: 'Dates make sense', ok: !openDate || !closeDate || closeDate >= openDate },
   ]
 
-  async function onSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  async function save(): Promise<boolean> {
     setSuccess('')
     setSubmitted(true)
     const problems = validateSurveyForm({ title, openDate, closeDate, questions })
     if (problems.length > 0) {
       setErrors(problems)
-      return
+      return false
     }
     setErrors([])
     setSaving(true)
@@ -88,8 +90,36 @@ export default function CreateSurvey() {
       const saved = await updateSurvey(surveyId, { title, description, openDate, closeDate, questions })
       setQuestions(saved.questions.map(toEditorQuestion))
       setSuccess('Survey saved.')
+      return true
     } catch (err) {
       setErrors([err instanceof Error ? err.message : 'Something went wrong'])
+      return false
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    await save()
+  }
+
+  async function onPublish() {
+    if (questions.length === 0) {
+      setErrors(['Add at least one question before publishing.'])
+      return
+    }
+    if (!window.confirm('Publish this survey? Respondents can answer it and its questions can no longer be changed.')) {
+      return
+    }
+    if (!(await save())) return
+    setSaving(true)
+    try {
+      const published = await publishSurvey(surveyId)
+      setStatus(published.status)
+      setSuccess('Survey published.')
+    } catch (err) {
+      setErrors([err instanceof Error ? err.message : 'Unable to publish the survey.'])
     } finally {
       setSaving(false)
     }
@@ -158,7 +188,7 @@ export default function CreateSurvey() {
           <h2 className="summary-title">{title.trim() || 'Untitled survey'}</h2>
           <p className="summary-desc">{description.trim() || 'No description yet.'}</p>
           <p className="summary-meta">
-            {questions.length} {questions.length === 1 ? 'question' : 'questions'}
+            {questions.length} {questions.length === 1 ? 'question' : 'questions'}, {questions.filter((q) => q.mandatory).length} required
           </p>
           <p className="summary-meta">
             {openDate || closeDate
@@ -184,6 +214,15 @@ export default function CreateSurvey() {
           <button type="submit" className="btn" disabled={saving}>
             {saving ? 'Saving...' : 'Save changes'}
           </button>
+          {status === 'Draft' ? (
+            <button type="button" className="btn btn-outline" disabled={saving} onClick={onPublish}>
+              Publish survey
+            </button>
+          ) : (
+            <p className="summary-meta">
+              Status: {status}. Respondent link: <Link to={`/s/${surveyId}`}>/s/{surveyId}</Link>
+            </p>
+          )}
           <Link to={`/surveys/${surveyId}/preview`} className="btn btn-outline">Preview</Link>
           <Link to="/dashboard" className="link-btn">Back to dashboard</Link>
         </div>

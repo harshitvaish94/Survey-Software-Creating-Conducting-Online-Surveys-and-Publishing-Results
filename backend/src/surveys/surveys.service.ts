@@ -95,6 +95,25 @@ export class SurveysService {
     return this.findOne(id);
   }
 
+  /** Moves a draft survey to Published. It needs at least one question. */
+  async publish(id: number): Promise<Survey> {
+    const survey = await this.findOne(id);
+    if (survey.status !== SurveyStatus.DRAFT) {
+      throw new ConflictException('This survey has already been published.');
+    }
+    if (survey.questions.length === 0) {
+      throw new BadRequestException(
+        'Add at least one question before publishing.',
+      );
+    }
+    const row = await this.surveyRepository.findOne({ where: { id } });
+    if (row) {
+      row.status = SurveyStatus.PUBLISHED;
+      await this.surveyRepository.save(row);
+    }
+    return this.findOne(id);
+  }
+
   /** Questions may only change while the survey is a draft. */
   assertDraft(survey: Survey): void {
     if (survey.status !== SurveyStatus.DRAFT) {
@@ -155,8 +174,15 @@ export class SurveysService {
     }
 
     for (const [position, item] of items.entries()) {
+      const prior = existing.find((q) => q.id === item.id);
       await repo.save(
-        repo.create({ id: item.id, surveyId, position, ...item.data }),
+        repo.create({
+          id: item.id,
+          surveyId,
+          position,
+          ...item.data,
+          mandatory: item.data.mandatory ?? prior?.mandatory ?? false,
+        }),
       );
     }
   }

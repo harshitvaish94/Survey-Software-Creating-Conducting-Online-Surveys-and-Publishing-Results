@@ -34,6 +34,7 @@ export default function QuestionEditor({ q, index, total, errors = [], onChange,
           value={q.text}
           onChange={(e) => set({ text: e.target.value })}
         />
+        {q.mandatory ? <span className="chip req-chip">Required</span> : <span className="chip opt-chip">Optional</span>}
         <div className="row-actions">
           <button type="button" className="icon-btn" disabled={index === 0} onClick={() => onMove(-1)} aria-label="Move up">↑</button>
           <button type="button" className="icon-btn" disabled={index === total - 1} onClick={() => onMove(1)} aria-label="Move down">↓</button>
@@ -104,6 +105,17 @@ export default function QuestionEditor({ q, index, total, errors = [], onChange,
       )}
 
       {q.type === 'text' && <p className="text-preview">Respondents type their answer here.</p>}
+
+      <div className="req-toggle" role="radiogroup" aria-label="Answer requirement">
+        <label className={q.mandatory ? 'opt sm on' : 'opt sm'}>
+          <input type="radio" name={`required-${q.uid}`} checked={q.mandatory} onChange={() => set({ mandatory: true })} />
+          Required
+        </label>
+        <label className={!q.mandatory ? 'opt sm on' : 'opt sm'}>
+          <input type="radio" name={`required-${q.uid}`} checked={!q.mandatory} onChange={() => set({ mandatory: false })} />
+          Optional
+        </label>
+      </div>
 
       {errors.length > 0 && (
         <ul className="q-errors" role="alert">

@@ -7,11 +7,18 @@ function setup() {
     findAll: vi.fn().mockResolvedValue([]),
     findOne: vi.fn().mockResolvedValue('one'),
     update: vi.fn().mockResolvedValue('updated'),
+    publish: vi.fn().mockResolvedValue('published'),
   };
   return { service, controller: new SurveysController(service as any) };
 }
 
 describe('SurveysController', () => {
+  it('delegates publish', async () => {
+    const { controller, service } = setup();
+    await expect(controller.publish(5)).resolves.toBe('published');
+    expect(service.publish).toHaveBeenCalledWith(5);
+  });
+
   it('delegates create', async () => {
     const { controller, service } = setup();
     const dto = { title: 'T' };

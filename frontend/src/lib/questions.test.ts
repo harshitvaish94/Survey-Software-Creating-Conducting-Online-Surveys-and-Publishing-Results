@@ -4,20 +4,23 @@ import { ratingScale, toEditorQuestion, toQuestionPayload, newEditorQuestion } f
 describe('question mapping', () => {
   it('only sends options for choice types and trims them', () => {
     const q = { ...newEditorQuestion(), text: ' Hi ', type: 'dropdown' as const, options: [' A ', '', 'B'] }
-    expect(toQuestionPayload(q)).toEqual({ text: 'Hi', type: 'dropdown', options: ['A', 'B'] })
+    expect(toQuestionPayload(q)).toEqual({ text: 'Hi', type: 'dropdown', options: ['A', 'B'], mandatory: false })
   })
 
   it('sends the rating range only for rating questions', () => {
     const q = { ...newEditorQuestion(), text: 'Rate', type: 'rating' as const, ratingMin: 0, ratingMax: 10 }
-    expect(toQuestionPayload(q)).toEqual({ text: 'Rate', type: 'rating', ratingMin: 0, ratingMax: 10 })
-    expect(toQuestionPayload({ ...q, type: 'text' })).toEqual({ text: 'Rate', type: 'text' })
+    expect(toQuestionPayload(q)).toEqual({
+      text: 'Rate', type: 'rating', ratingMin: 0, ratingMax: 10, mandatory: false,
+    })
+    expect(toQuestionPayload({ ...q, type: 'text' })).toEqual({ text: 'Rate', type: 'text', mandatory: false })
   })
 
   it('keeps the server id so edits update instead of recreate', () => {
     const q = toEditorQuestion({
-      id: 7, position: 0, text: 'T', type: 'text', options: null, ratingMin: null, ratingMax: null,
+      id: 7, position: 0, text: 'T', type: 'text', options: null, ratingMin: null, ratingMax: null, mandatory: true,
     })
     expect(toQuestionPayload(q).id).toBe(7)
+    expect(toQuestionPayload(q).mandatory).toBe(true)
   })
 
   it('builds the rating scale', () => {

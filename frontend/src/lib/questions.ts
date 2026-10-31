@@ -26,6 +26,7 @@ export interface ServerQuestion {
   options: string[] | null
   ratingMin: number | null
   ratingMax: number | null
+  mandatory: boolean
 }
 
 /** Question as edited in the builder. `uid` is a client-only React key. */
@@ -37,6 +38,7 @@ export interface EditorQuestion {
   options: string[]
   ratingMin: number
   ratingMax: number
+  mandatory: boolean
 }
 
 export interface QuestionPayload {
@@ -46,6 +48,20 @@ export interface QuestionPayload {
   options?: string[]
   ratingMin?: number
   ratingMax?: number
+  mandatory: boolean
+}
+
+export type AnswerValue = string | string[] | number | null
+
+/** The part of a question the respondent-facing UI needs. */
+export interface RespondentQuestion {
+  id: number
+  text: string
+  type: QuestionType
+  options: string[] | null
+  ratingMin: number | null
+  ratingMax: number | null
+  mandatory?: boolean
 }
 
 let uidSeq = 0
@@ -58,6 +74,7 @@ export const newEditorQuestion = (): EditorQuestion => ({
   options: ['Option 1', 'Option 2'],
   ratingMin: RATING_DEFAULT_MIN,
   ratingMax: RATING_DEFAULT_MAX,
+  mandatory: false,
 })
 
 export function toEditorQuestion(q: ServerQuestion): EditorQuestion {
@@ -69,12 +86,13 @@ export function toEditorQuestion(q: ServerQuestion): EditorQuestion {
     options: q.options ?? (hasOptions(q.type) ? [] : ['Option 1', 'Option 2']),
     ratingMin: q.ratingMin ?? RATING_DEFAULT_MIN,
     ratingMax: q.ratingMax ?? RATING_DEFAULT_MAX,
+    mandatory: q.mandatory,
   }
 }
 
 /** Builds the API payload; only sends the configuration that applies to the type. */
 export function toQuestionPayload(q: EditorQuestion): QuestionPayload {
-  const payload: QuestionPayload = { text: q.text.trim(), type: q.type }
+  const payload: QuestionPayload = { text: q.text.trim(), type: q.type, mandatory: q.mandatory }
   if (q.id != null) payload.id = q.id
   if (hasOptions(q.type)) {
     payload.options = q.options.map((o) => o.trim()).filter(Boolean)

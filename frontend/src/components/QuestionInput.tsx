@@ -1,17 +1,8 @@
 import type { ReactNode } from 'react'
 import { ratingScale } from '../lib/questions'
-import type { QuestionType } from '../lib/questions'
+import type { AnswerValue, RespondentQuestion } from '../lib/questions'
 
-export type AnswerValue = string | string[] | number | null
-
-export interface RespondentQuestion {
-  id: number
-  text: string
-  type: QuestionType
-  options: string[] | null
-  ratingMin: number | null
-  ratingMax: number | null
-}
+export type { AnswerValue, RespondentQuestion }
 
 interface Props {
   question: RespondentQuestion
@@ -31,7 +22,7 @@ export default function QuestionInput({ question, value, onChange, error }: Prop
   switch (question.type) {
     case 'single':
       body = (
-        <div className="options">
+        <div className="options" role="radiogroup" aria-label={question.text} aria-required={question.mandatory || undefined}>
           {options.map((o) => (
             <label key={o} className={value === o ? 'opt on' : 'opt'}>
               <input type="radio" name={name} checked={value === o} onChange={() => onChange(o)} />
@@ -67,6 +58,7 @@ export default function QuestionInput({ question, value, onChange, error }: Prop
         <select
           aria-label={question.text}
           aria-describedby={describedBy}
+          aria-required={question.mandatory || undefined}
           value={typeof value === 'string' ? value : ''}
           onChange={(e) => onChange(e.target.value || null)}
         >
@@ -84,6 +76,7 @@ export default function QuestionInput({ question, value, onChange, error }: Prop
           aria-describedby={describedBy}
           rows={3}
           maxLength={5000}
+          aria-required={question.mandatory || undefined}
           value={typeof value === 'string' ? value : ''}
           onChange={(e) => onChange(e.target.value)}
         />
@@ -94,7 +87,7 @@ export default function QuestionInput({ question, value, onChange, error }: Prop
       const max = question.ratingMax ?? 5
       body = (
         <>
-          <div className="options" role="radiogroup" aria-label={`Rating from ${min} to ${max}`}>
+          <div className="options" role="radiogroup" aria-label={`Rating from ${min} to ${max}`} aria-required={question.mandatory || undefined}>
             {ratingScale(min, max).map((n) => (
               <label key={n} className={value === n ? 'opt on' : 'opt'}>
                 <input type="radio" name={name} checked={value === n} onChange={() => onChange(n)} />
@@ -114,7 +107,14 @@ export default function QuestionInput({ question, value, onChange, error }: Prop
 
   return (
     <fieldset className="resp-q">
-      <legend>{question.text}</legend>
+      <legend>
+        {question.text}
+        {question.mandatory && (
+          <span className="req-mark" title="Required">
+            {' '}*<span className="sr-only"> (required)</span>
+          </span>
+        )}
+      </legend>
       {body}
       {error && (
         <p id={errorId} className="error" role="alert">
