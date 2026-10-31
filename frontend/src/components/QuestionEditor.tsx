@@ -6,12 +6,14 @@ interface Props {
   index: number
   total: number
   errors?: string[]
+  /** True for published surveys: every control is disabled. */
+  readOnly?: boolean
   onChange: (q: EditorQuestion) => void
   onDelete: () => void
   onMove: (direction: -1 | 1) => void
 }
 
-export default function QuestionEditor({ q, index, total, errors = [], onChange, onDelete, onMove }: Props) {
+export default function QuestionEditor({ q, index, total, errors = [], readOnly = false, onChange, onDelete, onMove }: Props) {
   const set = (patch: Partial<EditorQuestion>) => onChange({ ...q, ...patch })
   const setOption = (i: number, value: string) =>
     set({ options: q.options.map((o, k) => (k === i ? value : o)) })
@@ -24,7 +26,8 @@ export default function QuestionEditor({ q, index, total, errors = [], onChange,
   const maxChoices = ratingScale(q.ratingMin + 1, RATING_ABSOLUTE_MAX)
 
   return (
-    <div className="q-card">
+    <fieldset className="q-card" disabled={readOnly}>
+      <legend className="sr-only">Question {index + 1}</legend>
       <div className="q-head">
         <span className="q-num">{index + 1}</span>
         <input
@@ -124,6 +127,6 @@ export default function QuestionEditor({ q, index, total, errors = [], onChange,
           ))}
         </ul>
       )}
-    </div>
+    </fieldset>
   )
 }
