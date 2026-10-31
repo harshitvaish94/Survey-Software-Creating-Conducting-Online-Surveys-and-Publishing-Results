@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import CreateSurvey from './pages/CreateSurvey'
 import ProtectedRoute from './auth/ProtectedRoute'
 import { useAuth } from './auth/context'
+import SurveyCreate from './pages/SurveyCreate'
 
 function Mark() {
   return (
@@ -32,13 +33,21 @@ export default function App() {
           <Mark />
           Survey Management
         </NavLink>
+
         <div className="links">
           {user ? (
             <>
               <NavLink to="/dashboard">Dashboard</NavLink>
               <NavLink to="/surveys/new">New survey</NavLink>
               <span className="who">{user.email}</span>
-              <button type="button" className="logout" onClick={onLogout}>Log out</button>
+
+              <button
+                type="button"
+                className="logout"
+                onClick={onLogout}
+              >
+                Log out
+              </button>
             </>
           ) : (
             <>
@@ -48,14 +57,41 @@ export default function App() {
           )}
         </div>
       </nav>
+
       <main className="container">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/surveys/new" element={<ProtectedRoute><CreateSurvey key="new" /></ProtectedRoute>} />
-          <Route path="/surveys/:id/edit" element={<ProtectedRoute><CreateSurvey key="edit" /></ProtectedRoute>} />
+
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* SMS-16: Create a new survey */}
+          <Route
+            path="/surveys/new"
+            element={
+              <ProtectedRoute>
+                <SurveyCreate key="new" />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Existing survey builder */}
+          <Route
+            path="/surveys/:id/edit"
+            element={
+              <ProtectedRoute>
+                <CreateSurvey key="edit" />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </main>
     </>
