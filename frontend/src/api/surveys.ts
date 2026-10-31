@@ -52,5 +52,14 @@ export const publishSurvey = (id: number) =>
 export const submitResponse = (id: number, answers: Record<string, unknown>) =>
   request<{ id: number }>(`/surveys/${id}/responses`, { method: 'POST', body: JSON.stringify({ answers }) })
 
+export const deleteQuestion = (surveyId: number, questionId: number) =>
+  request<void>(`/surveys/${surveyId}/questions/${questionId}`, { method: 'DELETE' })
+
+export const reorderQuestions = (surveyId: number, questionIds: number[]) =>
+  request<unknown>(`/surveys/${surveyId}/questions/order`, {
+    method: 'PUT',
+    body: JSON.stringify({ questionIds }),
+  })
+
 export const updateSurvey = (id: number, input: SurveyInput) =>
   request<Survey>(`/surveys/${id}`, { method: 'PUT', body: JSON.stringify(toPayload(input)) })

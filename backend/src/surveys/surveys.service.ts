@@ -95,6 +95,62 @@ export class SurveysService {
     return this.findOne(id);
   }
 
+  /** Deletes one question of a draft survey and closes the gap in the order. */
+  async removeQuestion(surveyId: number, questionId: number): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      await this.loadDraft(manager, surveyId);
+      const repo = manager.getRepository(Question);
+      const all = await repo.find({ where: { surveyId } });
+      const target = all.find((q) => q.id === questionId);
+      if (!target) {
+        throw new NotFoundException(
+          `Question ${questionId} not found in survey ${surveyId}.`,
+        );
+      }
+      await repo.remove(target);
+
+      const rest = all
+        .filter((q) => q.id !== questionId)
+        .sort((a, b) => a.position - b.position);
+      for (const [position, question] of rest.entries()) {
+        if (question.position !== position) {
+          question.position = position;
+          await repo.save(question);
+        }
+      }
+    });
+  }
+
+  /** Persists a new order. `questionIds` must list every question exactly once. */
+  async reorderQuestions(
+    surveyId: number,
+    questionIds: number[],
+  ): Promise<Question[]> {
+    return this.dataSource.transaction(async (manager) => {
+      await this.loadDraft(manager, surveyId);
+      const repo = manager.getRepository(Question);
+      const all = await repo.find({ where: { surveyId } });
+      const known = new Set(all.map((q) => q.id));
+
+      const sameSet =
+        questionIds.length === all.length &&
+        new Set(questionIds).size === questionIds.length &&
+        questionIds.every((id) => known.has(id));
+      if (!sameSet) {
+        throw new BadRequestException(
+          'questionIds must list every question of this survey exactly once.',
+        );
+      }
+
+      for (const [position, id] of questionIds.entries()) {
+        const question = all.find((q) => q.id === id) as Question;
+        question.position = position;
+        await repo.save(question);
+      }
+      return all.sort((a, b) => a.position - b.position);
+    });
+  }
+
   /** Moves a draft survey to Published. It needs at least one question. */
   async publish(id: number): Promise<Survey> {
     const survey = await this.findOne(id);
@@ -121,6 +177,20 @@ export class SurveysService {
         'Questions can only be changed while the survey is a draft.',
       );
     }
+  }
+
+  private async loadDraft(
+    manager: EntityManager,
+    surveyId: number,
+  ): Promise<Survey> {
+    const survey = await manager
+      .getRepository(Survey)
+      .findOne({ where: { id: surveyId } });
+    if (!survey) {
+      throw new NotFoundException(`Survey ${surveyId} not found.`);
+    }
+    this.assertDraft(survey);
+    return survey;
   }
 
   private assertDates(dto: CreateSurveyDto): void {
