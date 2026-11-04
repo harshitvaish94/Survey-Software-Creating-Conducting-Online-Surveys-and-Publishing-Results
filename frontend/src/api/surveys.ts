@@ -1,21 +1,19 @@
-export type QuestionType = 'single' | 'multiple' | 'text' | 'rating' | 'dropdown'
+import { request } from './http'
+import { toQuestionPayload } from '../lib/questions'
+import type { EditorQuestion, QuestionPayload, ServerQuestion } from '../lib/questions'
 
-export const QUESTION_TYPES: { value: QuestionType; label: string }[] = [
-  { value: 'single', label: 'Single choice' },
-  { value: 'multiple', label: 'Multiple choice' },
-  { value: 'text', label: 'Text' },
-  { value: 'rating', label: 'Rating scale (1 to 5)' },
-  { value: 'dropdown', label: 'Dropdown' },
-]
+export type SurveyStatus = 'Draft' | 'Published' | 'Closed'
 
-export const hasOptions = (t: QuestionType) => t === 'single' || t === 'multiple' || t === 'dropdown'
-
-export interface Question {
+export interface Survey {
   id: number
-  text: string
-  type: QuestionType
-  options: string[]
-  mandatory: boolean
+  title: string
+  description: string | null
+  openDate: string | null
+  closeDate: string | null
+  status: SurveyStatus
+  createdAt: string
+  updatedAt: string
+  questions: ServerQuestion[]
 }
 
 export interface SurveyInput {
@@ -23,7 +21,7 @@ export interface SurveyInput {
   description: string
   openDate: string
   closeDate: string
-  questions: Question[]
+  questions: EditorQuestion[]
 }
 
 export interface Survey extends SurveyInput {
@@ -49,31 +47,12 @@ export function listSurveys(ownerEmail?: string): Survey[] {
   }
 }
 
-export function getSurvey(id: number): Survey | undefined {
-  return listSurveys().find((s) => s.id === id)
-}
+export const listSurveys = () => request<Survey[]>('/surveys')
 
-function persist(all: Survey[]) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(all))
-  } catch {
-    /* ignore */
-  }
-}
+export const getSurvey = (id: number) => request<Survey>(`/surveys/${id}`)
 
-function validate(input: SurveyInput) {
-  if (!input.title.trim()) throw new Error('Title is required')
-  if (input.openDate && input.closeDate && input.closeDate < input.openDate) {
-    throw new Error('Close date cannot be earlier than open date')
-  }
-  if (input.questions.length === 0) throw new Error('Add at least one question')
-  for (const [i, q] of input.questions.entries()) {
-    if (!q.text.trim()) throw new Error(`Question ${i + 1} needs text`)
-    if (hasOptions(q.type) && q.options.filter((o) => o.trim()).length < 2) {
-      throw new Error(`Question ${i + 1} needs at least two options`)
-    }
-  }
-}
+export const publishSurvey = (id: number) =>
+  request<Survey>(`/surveys/${id}/publish`, { method: 'POST' })
 
 export async function saveSurvey(input: SurveyInput, ownerEmail: string): Promise<Survey> {
   await delay(300)

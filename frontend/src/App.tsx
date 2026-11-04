@@ -7,6 +7,9 @@ import CreateSurvey from './pages/CreateSurvey'
 import TakeSurvey from './pages/TakeSurvey'
 import ProtectedRoute from './auth/ProtectedRoute'
 import { useAuth } from './auth/context'
+import SurveyCreate from './pages/SurveyCreate'
+import SurveyPreview from './pages/SurveyPreview'
+import SurveyRespond from './pages/SurveyRespond'
 
 function Mark() {
   return (
@@ -33,13 +36,21 @@ export default function App() {
           <Mark />
           Survey Management
         </NavLink>
+
         <div className="links">
           {user ? (
             <>
               <NavLink to="/dashboard">Dashboard</NavLink>
               <NavLink to="/surveys/new">New survey</NavLink>
               <span className="who">{user.email}</span>
-              <button type="button" className="logout" onClick={onLogout}>Log out</button>
+
+              <button
+                type="button"
+                className="logout"
+                onClick={onLogout}
+              >
+                Log out
+              </button>
             </>
           ) : (
             <>
@@ -49,6 +60,7 @@ export default function App() {
           )}
         </div>
       </nav>
+
       <main className="container">
         <Routes>
           <Route path="/" element={<Home />} />

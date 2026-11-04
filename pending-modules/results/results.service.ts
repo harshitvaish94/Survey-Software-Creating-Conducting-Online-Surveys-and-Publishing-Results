@@ -71,13 +71,41 @@ export class ResultsService {
 
       resultsQuestions.push(qResult);
     }
-
+    
     return {
       surveyId: survey.id,
       title: survey.title,
       totalResponses: Number(totalResponses?.count || 0),
       questions: resultsQuestions,
     };
+  }
+
+  async exportResultsAsCsv(surveyId: string, userId: string): Promise<string> {
+    const results = await this.getConsolidatedResults(surveyId, userId);
+    
+    let csvContent = 'Survey Title,Question Prompt,Question Type,Answer Option / Detail,Count / Value,Percentage / Average\n';
+
+    results.questions.forEach((q) => {
+      const cleanPrompt = `"${q.prompt.replace(/"/g, '""')}"`;
+      
+      if (q.counts && q.counts.length > 0) {
+        q.counts.forEach((c) => {
+          const cleanLabel = `"${c.label.replace(/"/g, '""')}"`;
+          csvContent += `"${results.title.replace(/"/g, '""')}",${cleanPrompt},${q.type},${cleanLabel},${c.count},${c.percent}%\n`;
+        });
+      } else if (q.type === QuestionType.RATING_SCALE || q.average !== undefined) {
+        csvContent += `"${results.title.replace(/"/g, '""')}",${cleanPrompt},${q.type},Average Rating,${q.average},Total Ratings: ${q.totalRatings}\n`;
+      } else if (q.textAnswers && q.textAnswers.length > 0) {
+        q.textAnswers.forEach((ans) => {
+          const cleanAns = `"${String(ans).replace(/"/g, '""')}"`;
+          csvContent += `"${results.title.replace(/"/g, '""')}",${cleanPrompt},${q.type},${cleanAns},1,\n`;
+        });
+      } else {
+        csvContent += `"${results.title.replace(/"/g, '""')}",${cleanPrompt},${q.type},No Responses,0,0%\n`;
+      }
+    });
+
+    return csvContent;
   }
 
   private async verifySurveyAuth(surveyId: string, userId: string) {
