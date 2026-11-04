@@ -4,6 +4,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import CreateSurvey from './pages/CreateSurvey'
+import TakeSurvey from './pages/TakeSurvey'
 import ProtectedRoute from './auth/ProtectedRoute'
 import { useAuth } from './auth/context'
 
@@ -53,6 +54,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/s/:id" element={<TakeSurvey />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/surveys/new" element={<ProtectedRoute><CreateSurvey key="new" /></ProtectedRoute>} />
           <Route path="/surveys/:id/edit" element={<ProtectedRoute><CreateSurvey key="edit" /></ProtectedRoute>} />

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useAuth } from '../auth/context'
 import type { FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import QuestionEditor from '../components/QuestionEditor'
@@ -17,6 +18,7 @@ const fmt = (d: string) =>
   d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
 
 export default function CreateSurvey() {
+  const { user } = useAuth()
   const { id } = useParams()
   const existing = id ? getSurvey(Number(id)) : undefined
 
@@ -64,9 +66,9 @@ export default function CreateSurvey() {
     try {
       const input = { title, description, openDate, closeDate, questions }
       if (existing) {
-        await updateSurvey(existing.id, input)
+        await updateSurvey(Number(id), input, user?.email ?? '')
       } else {
-        await saveSurvey(input)
+        await saveSurvey(input, user?.email ?? '')
       }
       navigate('/dashboard')
     } catch (err) {

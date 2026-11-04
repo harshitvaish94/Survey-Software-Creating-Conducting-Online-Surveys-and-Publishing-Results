@@ -13,7 +13,7 @@ function greet(): string {
 export default function Dashboard() {
   const { user } = useAuth()
   const [greeting] = useState(greet)
-  const surveys = listSurveys()
+  const surveys = listSurveys(user?.email ?? '')
   const name = user ? user.email.split('@')[0] : ''
 
   return (
@@ -35,12 +35,15 @@ export default function Dashboard() {
       ) : (
         <div className="survey-list">
           {surveys.map((s) => (
-            <Link key={s.id} to={`/surveys/${s.id}/edit`} className="survey-card">
+            <div key={s.id} className="survey-card">
               <span className="chip">{s.status}</span>
               <h2>{s.title}</h2>
               <p>{s.questions.length} {s.questions.length === 1 ? 'question' : 'questions'}</p>
-              <span className="edit-hint">Edit survey</span>
-            </Link>
+              <div className="card-actions">
+                <Link to={`/surveys/${s.id}/edit`} className="edit-hint">Edit survey</Link>
+                <Link to={`/s/${s.id}`} className="edit-hint">Take survey</Link>
+              </div>
+            </div>
           ))}
         </div>
       )}
