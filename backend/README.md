@@ -152,3 +152,22 @@ Every route needs a session unless it is marked `@Public()`. `@Roles(...)` limit
 | `/auth/register`, `/auth/login`, `/auth/logout`, `/health` | Public |
 
 A creator who touches another creator's survey gets 403 "You can only manage your own surveys."
+
+## Results (SMS-29)
+
+`GET /surveys/:id/results` returns consolidated results per question, computed in Postgres.
+Owner or Administrator only (others get 403).
+
+| Question type | Returned |
+|---|---|
+| single / dropdown / multiple | `counts`: every option in order with `count` and `percent` (share of selections) |
+| rating | `average` (2 decimals) and `totalRatings` |
+| text | `textAnswers` (blank answers dropped) |
+
+Every question also has `answered` (responses that answered it); the survey has `totalResponses`.
+
+TC-Res-01 checks the SQL against a hand-calculated data set on a real database:
+
+```bash
+RESULTS_DB_TEST=1 npx vitest run src/results/results.sql.spec.ts
+```
