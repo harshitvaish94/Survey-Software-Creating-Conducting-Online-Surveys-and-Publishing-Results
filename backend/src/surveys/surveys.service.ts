@@ -46,6 +46,7 @@ export class SurveysService {
           openDate: dto.openDate || null,
           closeDate: dto.closeDate || null,
           status: SurveyStatus.DRAFT,
+          allowMultipleResponses: dto.allowMultipleResponses ?? false,
           ownerId,
         }),
       );
@@ -99,6 +100,10 @@ export class SurveysService {
       survey.description = dto.description?.trim() || null;
       survey.openDate = dto.openDate || null;
       survey.closeDate = dto.closeDate || null;
+      // Only change the SMS-27 setting when the client sends it.
+      if (dto.allowMultipleResponses !== undefined) {
+        survey.allowMultipleResponses = dto.allowMultipleResponses;
+      }
       await surveyRepo.save(survey);
 
       if (questions) {
