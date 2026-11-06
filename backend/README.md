@@ -128,3 +128,14 @@ npm run migration:generate -- src/database/migrations/AddSomething   # after cha
 The app also applies pending migrations on start-up; set `DB_MIGRATIONS_RUN=false` to turn that off.
 
 Tables: `users`, `reset_tokens`, `surveys`, `questions`, `responses`, `answers`, `submission_guard`.
+
+## Authentication (SMS-14)
+
+| Endpoint | What it does |
+|---|---|
+| `POST /auth/register` | `{ email, password, role? }` creates an account. Passwords are hashed with Argon2id. `role` may be `Creator` (default) or `Respondent`. 409 if the email is taken. |
+| `POST /auth/login` | `{ email, password }` sets the `sms_session` cookie (JWT, HttpOnly, SameSite=Lax, Secure in production, 8 h). 401 on bad credentials. |
+| `POST /auth/logout` | Clears the cookie. |
+| `GET /auth/me` | The logged-in user, or 401. |
+
+Set `JWT_SECRET` (required when `NODE_ENV=production`) and `FRONTEND_ORIGIN` for CORS.

@@ -3,6 +3,8 @@ import type { AuthUser } from '../api/auth'
 
 export interface AuthState {
   user: AuthUser | null
+  /** True until the first session check with the API has finished. */
+  checking: boolean
   signIn: (user: AuthUser) => void
   signOut: () => void
 }

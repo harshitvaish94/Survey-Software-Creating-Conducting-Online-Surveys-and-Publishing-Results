@@ -5,6 +5,8 @@ import { AppService } from './app.service';
 import { dataSourceOptions } from './database/data-source';
 import { SurveysModule } from './surveys/surveys.module';
 import { HealthModule } from './health/health.module';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -13,6 +15,8 @@ import { HealthModule } from './health/health.module';
       // Apply any pending migrations on start-up so a fresh database is ready to use.
       migrationsRun: process.env.DB_MIGRATIONS_RUN !== 'false',
     }),
+    UsersModule,
+    AuthModule,
     SurveysModule,
     HealthModule,
   ],
