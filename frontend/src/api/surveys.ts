@@ -11,6 +11,8 @@ export interface Survey {
   openDate: string | null
   closeDate: string | null
   status: SurveyStatus
+  /** User id of the creator who owns the survey (SMS-15). */
+  ownerId: number | null
   createdAt: string
   updatedAt: string
   questions: ServerQuestion[]
