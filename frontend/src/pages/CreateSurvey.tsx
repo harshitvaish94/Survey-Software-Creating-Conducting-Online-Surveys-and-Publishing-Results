@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { useAuth } from '../auth/context'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import ConfirmDialog from '../components/ConfirmDialog'
@@ -17,7 +16,6 @@ const fmt = (d: string) =>
 type Load = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready' }
 
 export default function CreateSurvey() {
-  const { user } = useAuth()
   const { id } = useParams()
   const surveyId = Number(id)
 
@@ -172,13 +170,9 @@ export default function CreateSurvey() {
     if (!(await save())) return
     setSaving(true)
     try {
-      const input = { title, description, openDate, closeDate, questions }
-      if (existing) {
-        await updateSurvey(Number(id), input, user?.email ?? '')
-      } else {
-        await saveSurvey(input, user?.email ?? '')
-      }
-      navigate('/dashboard')
+      const published = await publishSurvey(surveyId)
+      setStatus(published.status)
+      setSuccess('Survey published.')
     } catch (err) {
       setErrors([err instanceof Error ? err.message : 'Unable to publish the survey.'])
     } finally {
