@@ -24,26 +24,21 @@ export interface SurveyInput {
   questions: EditorQuestion[]
 }
 
-export interface Survey extends SurveyInput {
-  id: number
-  status: 'Draft'
-  ownerEmail?: string
+interface SurveyPayload {
+  title: string
+  description: string
+  openDate?: string
+  closeDate?: string
+  questions: QuestionPayload[]
 }
 
-const KEY = 'sms_surveys'
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-
-const same = (a?: string, b?: string) =>
-  !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase()
-
-// Pass the logged-in user's email to get only their surveys.
-// With no argument it returns all surveys (used internally and by the public respondent page).
-export function listSurveys(ownerEmail?: string): Survey[] {
-  try {
-    const all = JSON.parse(localStorage.getItem(KEY) ?? '[]') as Survey[]
-    return ownerEmail === undefined ? all : all.filter((s) => same(s.ownerEmail, ownerEmail))
-  } catch {
-    return []
+function toPayload(input: SurveyInput): SurveyPayload {
+  return {
+    title: input.title.trim(),
+    description: input.description.trim(),
+    openDate: input.openDate || undefined,
+    closeDate: input.closeDate || undefined,
+    questions: input.questions.map(toQuestionPayload),
   }
 }
 
@@ -54,73 +49,17 @@ export const getSurvey = (id: number) => request<Survey>(`/surveys/${id}`)
 export const publishSurvey = (id: number) =>
   request<Survey>(`/surveys/${id}/publish`, { method: 'POST' })
 
-export async function saveSurvey(input: SurveyInput, ownerEmail: string): Promise<Survey> {
-  await delay(300)
-  validate(input)
-  const saved: Survey = { ...input, id: Date.now(), status: 'Draft', ownerEmail }
-  persist([...listSurveys(), saved])
-  return saved
-}
+export const submitResponse = (id: number, answers: Record<string, unknown>) =>
+  request<{ id: number }>(`/surveys/${id}/responses`, { method: 'POST', body: JSON.stringify({ answers }) })
 
-export async function updateSurvey(id: number, input: SurveyInput, ownerEmail: string): Promise<Survey> {
-  await delay(300)
-  validate(input)
-  const all = listSurveys()
-  const current = all.find((s) => s.id === id)
-  if (!current) throw new Error('Survey not found')
-  if (!same(current.ownerEmail, ownerEmail)) throw new Error('You can only edit your own surveys')
-  const updated: Survey = { ...input, id, status: current.status, ownerEmail: current.ownerEmail }
-  persist(all.map((s) => (s.id === id ? updated : s)))
-  return updated
-}
+export const deleteQuestion = (surveyId: number, questionId: number) =>
+  request<void>(`/surveys/${surveyId}/questions/${questionId}`, { method: 'DELETE' })
 
-// ---- SMS-26: respondent answers (localStorage for now, real API later) ----
-export type AnswerValue = string | string[]
+export const reorderQuestions = (surveyId: number, questionIds: number[]) =>
+  request<unknown>(`/surveys/${surveyId}/questions/order`, {
+    method: 'PUT',
+    body: JSON.stringify({ questionIds }),
+  })
 
-export interface Answer {
-  questionId: number
-  value: AnswerValue
-}
-
-export interface SurveyResponse {
-  id: number
-  surveyId: number
-  submittedAt: string
-  answers: Answer[]
-}
-
-const RESPONSES_KEY = 'sms_responses'
-
-export function listResponses(surveyId?: number): SurveyResponse[] {
-  try {
-    const all = JSON.parse(localStorage.getItem(RESPONSES_KEY) ?? '[]') as SurveyResponse[]
-    return surveyId === undefined ? all : all.filter((r) => r.surveyId === surveyId)
-  } catch {
-    return []
-  }
-}
-
-// Mock API: replace with the real POST when the backend responses endpoint is ready.
-export async function submitResponse(surveyId: number, answers: Answer[]): Promise<SurveyResponse> {
-  await delay(300)
-  const survey = getSurvey(surveyId)
-  if (!survey) throw new Error('Survey not found')
-  for (const q of survey.questions) {
-    if (!q.mandatory) continue
-    const a = answers.find((x) => x.questionId === q.id)
-    const empty = !a || (Array.isArray(a.value) ? a.value.length === 0 : !a.value.trim())
-    if (empty) throw new Error(`Please answer: ${q.text}`)
-  }
-  const saved: SurveyResponse = {
-    id: Date.now(),
-    surveyId,
-    submittedAt: new Date().toISOString(),
-    answers,
-  }
-  try {
-    localStorage.setItem(RESPONSES_KEY, JSON.stringify([...listResponses(), saved]))
-  } catch {
-    /* ignore */
-  }
-  return saved
-}
+export const updateSurvey = (id: number, input: SurveyInput) =>
+  request<Survey>(`/surveys/${id}`, { method: 'PUT', body: JSON.stringify(toPayload(input)) })

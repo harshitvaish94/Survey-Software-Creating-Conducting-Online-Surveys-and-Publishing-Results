@@ -19,7 +19,7 @@ type State =
 export default function Dashboard() {
   const { user } = useAuth()
   const [greeting] = useState(greet)
-  const surveys = listSurveys(user?.email ?? '')
+  const [state, setState] = useState<State>({ status: 'loading' })
   const name = user ? user.email.split('@')[0] : ''
 
   useEffect(() => {
@@ -66,14 +66,24 @@ export default function Dashboard() {
 
       {state.status === 'ready' && state.surveys.length > 0 && (
         <div className="survey-list">
-          {surveys.map((s) => (
-            <div key={s.id} className="survey-card">
-              <span className="chip">{s.status}</span>
-              <h2>{s.title}</h2>
-              <p>{s.questions.length} {s.questions.length === 1 ? 'question' : 'questions'}</p>
+          {state.surveys.map((survey) => (
+            <div key={survey.id} className="survey-card">
+              <span className="chip">{survey.status}</span>
+              <h2>{survey.title}</h2>
+              <p>
+                {survey.questions.length}{' '}
+                {survey.questions.length === 1 ? 'question' : 'questions'}
+              </p>
               <div className="card-actions">
-                <Link to={`/surveys/${s.id}/edit`} className="edit-hint">Edit survey</Link>
-                <Link to={`/s/${s.id}`} className="edit-hint">Take survey</Link>
+                <Link to={`/surveys/${survey.id}/edit`} className="edit-hint">
+                  Edit survey
+                </Link>
+                {/* SMS-26: share / open the public respondent page once published */}
+                {survey.status === 'Published' && (
+                  <Link to={`/s/${survey.id}`} className="edit-hint">
+                    Take survey
+                  </Link>
+                )}
               </div>
             </div>
           ))}
