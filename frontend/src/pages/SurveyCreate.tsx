@@ -1,7 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { request } from '../api/http';
 
-const API_URL = 'http://localhost:3000/surveys';
+// Uses the shared API helper so the session cookie is sent (SMS-14/15).
+interface CreatedSurvey {
+  id: number;
+  title: string;
+}
 
 export default function SurveyCreate() {
 const navigate = useNavigate();
@@ -37,11 +42,8 @@ if (openDate && closeDate && closeDate < openDate) {
 setSaving(true);
 
 try {
-  const response = await fetch(API_URL, {
+  const data = await request<CreatedSurvey>('/surveys', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify({
       title: trimmedTitle,
       description: description.trim(),
@@ -49,16 +51,6 @@ try {
       closeDate: closeDate || undefined,
     }),
   });
-
-  const data = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    const message = Array.isArray(data?.message)
-      ? data.message.join(' ')
-      : data?.message;
-
-    throw new Error(message || 'Unable to create the survey.');
-  }
 
   setCreatedId(data.id);
   setSuccess(
