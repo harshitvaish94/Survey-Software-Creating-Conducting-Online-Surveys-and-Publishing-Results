@@ -5,7 +5,7 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import CreateSurvey from './pages/CreateSurvey'
 import ProtectedRoute from './auth/ProtectedRoute'
-import { useAuth } from './auth/context'
+import { CREATOR_ROLES, useAuth } from './auth/context'
 import SurveyCreate from './pages/SurveyCreate'
 import SurveyPreview from './pages/SurveyPreview'
 import SurveyRespond from './pages/SurveyRespond'
@@ -40,8 +40,12 @@ export default function App() {
         <div className="links">
           {user ? (
             <>
-              <NavLink to="/dashboard">Dashboard</NavLink>
-              <NavLink to="/surveys/new">New survey</NavLink>
+              {CREATOR_ROLES.includes(user.role) && (
+                <>
+                  <NavLink to="/dashboard">Dashboard</NavLink>
+                  <NavLink to="/surveys/new">New survey</NavLink>
+                </>
+              )}
               <span className="who">{user.email}</span>
 
               <button

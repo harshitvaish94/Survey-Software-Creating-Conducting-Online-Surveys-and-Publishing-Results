@@ -10,7 +10,7 @@ vi.mock('../api/surveys', () => ({ getSurvey: vi.fn(), submitResponse: vi.fn() }
 
 const survey: Survey = {
   id: 1, title: 'Feedback', description: null, openDate: null, closeDate: null,
-  status: 'Published', createdAt: '', updatedAt: '',
+  status: 'Published', ownerId: 1, createdAt: '', updatedAt: '',
   questions: [
     { id: 10, position: 0, text: 'Pick one', type: 'single', options: ['A', 'B'], ratingMin: null, ratingMax: null, mandatory: true },
     { id: 11, position: 1, text: 'Comments', type: 'text', options: null, ratingMin: null, ratingMax: null, mandatory: false },

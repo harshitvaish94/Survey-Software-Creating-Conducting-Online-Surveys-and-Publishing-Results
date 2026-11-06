@@ -6,6 +6,8 @@ import CreateSurvey from './CreateSurvey'
 import { ApiError } from '../api/http'
 import { deleteQuestion, getSurvey, reorderQuestions, updateSurvey } from '../api/surveys'
 import type { Survey } from '../api/surveys'
+import type { AuthUser } from '../api/auth'
+import { AuthContext } from '../auth/context'
 
 vi.mock('../api/surveys', () => ({
   getSurvey: vi.fn(),
@@ -17,20 +19,24 @@ vi.mock('../api/surveys', () => ({
 
 const survey: Survey = {
   id: 1, title: 'Feedback', description: null, openDate: null, closeDate: null,
-  status: 'Draft', createdAt: '', updatedAt: '',
+  status: 'Draft', ownerId: 1, createdAt: '', updatedAt: '',
   questions: [
     { id: 10, position: 0, text: 'First', type: 'text', options: null, ratingMin: null, ratingMax: null, mandatory: true },
     { id: 11, position: 1, text: 'Second', type: 'single', options: ['A', 'B'], ratingMin: null, ratingMax: null, mandatory: false },
   ],
 }
 
-function renderPage() {
+const owner: AuthUser = { id: 1, email: 'owner@x.com', role: 'Creator' }
+
+function renderPage(user: AuthUser = owner) {
   render(
-    <MemoryRouter initialEntries={['/surveys/1/edit']}>
-      <Routes>
-        <Route path="/surveys/:id/edit" element={<CreateSurvey />} />
-      </Routes>
-    </MemoryRouter>,
+    <AuthContext.Provider value={{ user, checking: false, signIn: () => {}, signOut: () => {} }}>
+      <MemoryRouter initialEntries={['/surveys/1/edit']}>
+        <Routes>
+          <Route path="/surveys/:id/edit" element={<CreateSurvey />} />
+        </Routes>
+      </MemoryRouter>
+    </AuthContext.Provider>,
   )
 }
 
@@ -144,5 +150,19 @@ describe('CreateSurvey (builder)', () => {
     vi.mocked(getSurvey).mockRejectedValue(new ApiError('Survey 9 not found.', 404))
     renderPage()
     expect(await screen.findByText('Survey 9 not found.')).toBeInTheDocument()
+  })
+
+  // SMS-15: another creator opening the edit link of a published survey only sees a message.
+  it("refuses to open another creator's survey", async () => {
+    vi.mocked(getSurvey).mockResolvedValue({ ...survey, status: 'Published', ownerId: 1 })
+    renderPage({ id: 2, email: 'test1@x.com', role: 'Creator' })
+    expect(await screen.findByRole('heading', { name: 'Not your survey' })).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent('You can only edit surveys you created')
+    expect(screen.queryByDisplayValue('Feedback')).not.toBeInTheDocument()
+  })
+
+  it('lets an administrator open any survey', async () => {
+    renderPage({ id: 9, email: 'admin@x.com', role: 'Administrator' })
+    expect(await screen.findByDisplayValue('Feedback')).toBeInTheDocument()
   })
 })
