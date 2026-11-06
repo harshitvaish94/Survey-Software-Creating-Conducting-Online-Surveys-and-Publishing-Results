@@ -9,6 +9,7 @@ import { useAuth } from './auth/context'
 import SurveyCreate from './pages/SurveyCreate'
 import SurveyPreview from './pages/SurveyPreview'
 import SurveyRespond from './pages/SurveyRespond'
+import ResultsPage from './pages/ResultsPage'
 
 function Mark() {
   return (
@@ -106,6 +107,16 @@ export default function App() {
           />
 
           {/* SMS-18: Public respondent page for published surveys */}
+          {/* SMS-30: results and charts for the survey owner */}
+          <Route
+            path="/surveys/:id/results"
+            element={
+              <ProtectedRoute>
+                <ResultsPage />
+              </ProtectedRoute>
+            }
+          />
+
           <Route path="/s/:id" element={<SurveyRespond />} />
         </Routes>
       </main>

@@ -84,6 +84,12 @@ export default function Dashboard() {
                     Take survey
                   </Link>
                 )}
+                {/* SMS-30: results are available once a survey has left Draft */}
+                {survey.status !== 'Draft' && (
+                  <Link to={`/surveys/${survey.id}/results`} className="edit-hint">
+                    View results
+                  </Link>
+                )}
               </div>
             </div>
           ))}
