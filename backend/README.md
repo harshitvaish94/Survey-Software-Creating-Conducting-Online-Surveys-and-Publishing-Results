@@ -112,3 +112,19 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+## Database migrations (SMS-13)
+
+The schema is owned by TypeORM migrations in `src/database/migrations`; `synchronize` is off.
+
+```bash
+docker compose up -d db          # Postgres 16 from the repo root
+npm run migration:run            # create / update all tables
+npm run migration:show           # list applied ([X]) and pending ([ ]) migrations
+npm run migration:revert         # undo the most recent migration
+npm run migration:generate -- src/database/migrations/AddSomething   # after changing an entity
+```
+
+The app also applies pending migrations on start-up; set `DB_MIGRATIONS_RUN=false` to turn that off.
+
+Tables: `users`, `reset_tokens`, `surveys`, `questions`, `responses`, `answers`, `submission_guard`.

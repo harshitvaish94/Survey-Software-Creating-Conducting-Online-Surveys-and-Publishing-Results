@@ -79,6 +79,8 @@ export class FakeDb {
   surveys = new FakeSurveyRepo(this);
   questions = new FakeRepo();
   responses = new FakeRepo();
+  answers = new FakeRepo();
+  users = new FakeRepo();
 
   dataSource = {
     transaction: async <R>(cb: (manager: any) => Promise<R>): Promise<R> =>
@@ -93,6 +95,10 @@ export class FakeDb {
         return this.questions;
       case 'SurveyResponse':
         return this.responses;
+      case 'Answer':
+        return this.answers;
+      case 'User':
+        return this.users;
       default:
         throw new Error(`FakeDb has no repository for ${entity.name}`);
     }

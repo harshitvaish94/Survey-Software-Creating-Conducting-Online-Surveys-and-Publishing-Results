@@ -5,8 +5,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  Index,
+  JoinColumn,
+  ManyToOne,
 } from 'typeorm';
 import type { Relation } from 'typeorm';
+import { User } from '../users/user.entity';
 import { Question } from './question.entity';
 
 export enum SurveyStatus {
@@ -39,10 +43,19 @@ export class Survey {
   })
   status: SurveyStatus;
 
-  @CreateDateColumn()
+  /** Creator who owns the survey. Only the owner (or an administrator) may manage it. */
+  @Index()
+  @Column({ type: 'int', nullable: true })
+  ownerId: number | null;
+
+  @ManyToOne(() => User, { onDelete: 'CASCADE', nullable: true })
+  @JoinColumn({ name: 'ownerId' })
+  owner: Relation<User> | null;
+
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
 
   @OneToMany(() => Question, (question) => question.survey)
