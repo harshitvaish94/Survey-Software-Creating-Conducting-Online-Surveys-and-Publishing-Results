@@ -48,6 +48,13 @@ describe('AuthProvider (SMS-14)', () => {
     expect(await screen.findByText('Login page')).toBeInTheDocument()
   })
 
+  it('blocks a Respondent from creator pages (SMS-15)', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => json(200, { id: 2, email: 'r@example.com', role: 'Respondent' }))
+    renderAt('/dashboard')
+    expect(await screen.findByRole('alert')).toHaveTextContent("can't open this page")
+    expect(screen.queryByText(/Signed in as/)).not.toBeInTheDocument()
+  })
+
   it('treats an unreachable server as logged out', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(() => Promise.reject(new TypeError('offline')))
     renderAt('/dashboard')

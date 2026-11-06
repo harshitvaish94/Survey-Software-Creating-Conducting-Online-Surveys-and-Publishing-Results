@@ -23,6 +23,7 @@ export class ResponsesService {
   async submit(
     surveyId: number,
     dto: SubmitResponseDto,
+    respondentId: number | null = null,
   ): Promise<{ id: number; submittedAt: Date }> {
     const survey = await this.surveyRepository.findOne({
       where: { id: surveyId },
@@ -45,11 +46,15 @@ export class ResponsesService {
       const responseRepo = manager.getRepository(SurveyResponse);
       const answerRepo = manager.getRepository(Answer);
       const saved = await responseRepo.save(
-        responseRepo.create({ surveyId, respondentId: null }),
+        responseRepo.create({ surveyId, respondentId }),
       );
       for (const [questionId, value] of Object.entries(answers)) {
         await answerRepo.save(
-          answerRepo.create({ responseId: saved.id, questionId: Number(questionId), value }),
+          answerRepo.create({
+            responseId: saved.id,
+            questionId: Number(questionId),
+            value,
+          }),
         );
       }
       return { id: saved.id, submittedAt: saved.submittedAt };

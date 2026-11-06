@@ -139,3 +139,16 @@ Tables: `users`, `reset_tokens`, `surveys`, `questions`, `responses`, `answers`,
 | `GET /auth/me` | The logged-in user, or 401. |
 
 Set `JWT_SECRET` (required when `NODE_ENV=production`) and `FRONTEND_ORIGIN` for CORS.
+
+## Roles and ownership (SMS-15)
+
+Every route needs a session unless it is marked `@Public()`. `@Roles(...)` limits a route to roles; anything else gets **403**.
+
+| Route | Who |
+|---|---|
+| `POST/GET /surveys`, `PUT /surveys/:id`, publish, reorder, delete question | Creator (own surveys only) or Administrator |
+| `GET /surveys/:id` | Anyone if Published; otherwise owner or Administrator |
+| `POST /surveys/:id/responses` | Anyone (the respondent is recorded when logged in) |
+| `/auth/register`, `/auth/login`, `/auth/logout`, `/health` | Public |
+
+A creator who touches another creator's survey gets 403 "You can only manage your own surveys."
