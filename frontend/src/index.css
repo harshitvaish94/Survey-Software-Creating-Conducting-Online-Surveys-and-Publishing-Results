@@ -1,3 +1,16 @@
+:root {
+  --ink: #12172b;
+  --paper: #f7f7fb;
+  --card: #ffffff;
+  --cobalt: #2a44e8;
+  --lemon: #ffd93d;
+  --mint: #d8f3e8;
+  --line: #dfe2ef;
+  --muted: #555b78;
+  --danger: #c0102f;
+  --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Figtree', 'Segoe UI', system-ui, sans-serif;
+}
 * { box-sizing: border-box; }
 body {
   margin: 0;
