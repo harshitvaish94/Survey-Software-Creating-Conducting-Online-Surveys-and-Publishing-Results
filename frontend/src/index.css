@@ -273,3 +273,18 @@ fieldset.q-card:disabled { opacity: .75; background: var(--paper); }
 
 /* SMS-26: dashboard card actions (edit + take survey) */
 .card-actions { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px; }
+
+/* SMS-30: results page */
+.res-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.res-back { display: inline-block; margin-bottom: 8px; font-weight: 600; }
+.res-card { display: flex; flex-direction: column; gap: 12px; margin: 0 0 16px; padding: 18px 20px; background: var(--card); border: 2px solid var(--ink); border-radius: 20px; box-shadow: 5px 5px 0 var(--ink); }
+.res-card h2 { margin: 0; }
+.res-grid { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr); gap: 16px; align-items: center; }
+.res-chart { position: relative; height: 260px; }
+.res-table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+.res-table th, .res-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line); }
+.res-table th:nth-child(n+2), .res-table td:nth-child(n+2) { text-align: right; }
+.res-text { margin: 0; padding: 10px 14px 10px 30px; max-height: 220px; overflow-y: auto; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; }
+.res-rating strong { font-size: 2rem; font-family: var(--font-display); }
+.res-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (max-width: 640px) { .res-grid { grid-template-columns: 1fr; } }
