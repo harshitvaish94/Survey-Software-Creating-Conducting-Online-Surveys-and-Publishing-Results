@@ -62,15 +62,12 @@ export class SurveysService {
     return this.findOne(surveyId);
   }
 
-  async findAll(): Promise<Survey[]> {
-    const surveys = await this.surveyRepository.find({
-  /** Surveys the user may manage: administrators see all, creators only their own. */
   findAllFor(user: AuthUser): Promise<Survey[]> {
     return this.findAll(user.role === UserRole.ADMIN ? undefined : user.id);
   }
 
-  findAll(ownerId?: number): Promise<Survey[]> {
-    return this.surveyRepository.find({
+  async findAll(ownerId?: number): Promise<Survey[]> {
+    const surveys = await this.surveyRepository.find({
       where: ownerId === undefined ? undefined : { ownerId },
       relations: { questions: true },
       order: { createdAt: 'DESC', questions: { position: 'ASC' } },
@@ -80,6 +77,16 @@ export class SurveysService {
       await this.closeIfExpired(survey, today);
     }
     return surveys;
+  }
+
+  async assertOwner(surveyId: number, user?: AuthUser): Promise<void> {
+    const survey = await this.surveyRepository.findOne({
+      where: { id: surveyId },
+    });
+    if (!survey) {
+      throw new NotFoundException(`Survey ${surveyId} not found.`);
+    }
+    assertCanManage(survey.ownerId, user);
   }
 
   async findOne(id: number): Promise<Survey> {
