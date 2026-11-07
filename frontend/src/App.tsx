@@ -1,4 +1,5 @@
-import { Routes, Route, NavLink, useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -10,6 +11,7 @@ import SurveyCreate from './pages/SurveyCreate'
 import SurveyPreview from './pages/SurveyPreview'
 import SurveyRespond from './pages/SurveyRespond'
 import ResultsPage from './pages/ResultsPage'
+import { pageTitle } from './lib/pageTitle'
 
 function Mark() {
   return (
@@ -23,6 +25,12 @@ function Mark() {
 export default function App() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
+
+  // SMS-37: give every page its own title (WCAG 2.4.2)
+  useEffect(() => {
+    document.title = pageTitle(pathname)
+  }, [pathname])
 
   function onLogout() {
     signOut()
@@ -31,6 +39,17 @@ export default function App() {
 
   return (
     <>
+      {/* SMS-37: skip link for keyboard users (WCAG 2.4.1) */}
+      <a
+        href="#main"
+        className="skip-link"
+        onClick={(e) => {
+          e.preventDefault()
+          document.getElementById('main')?.focus()
+        }}
+      >
+        Skip to main content
+      </a>
       <nav className="nav" aria-label="Main">
         <NavLink to="/" end className="brand">
           <Mark />
@@ -65,7 +84,7 @@ export default function App() {
         </div>
       </nav>
 
-      <main className="container">
+      <main id="main" tabIndex={-1} className="container">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
