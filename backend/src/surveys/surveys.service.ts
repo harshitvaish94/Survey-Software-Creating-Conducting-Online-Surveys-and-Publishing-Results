@@ -11,6 +11,11 @@ import { QuestionInputDto } from './question.dto';
 import { Question } from './question.entity';
 import { NormalizedQuestion, normalizeQuestion } from './question-validation';
 import { Survey, SurveyStatus } from './survey.entity';
+import {
+  isExpired,
+  persistClosed,
+  todayInSurveyTimezone,
+} from './survey-lifecycle';
 import { UpdateSurveyDto } from './update-survey.dto';
 
 interface PendingQuestion {
@@ -48,11 +53,16 @@ export class SurveysService {
     return this.findOne(surveyId);
   }
 
-  findAll(): Promise<Survey[]> {
-    return this.surveyRepository.find({
+  async findAll(): Promise<Survey[]> {
+    const surveys = await this.surveyRepository.find({
       relations: { questions: true },
       order: { createdAt: 'DESC', questions: { position: 'ASC' } },
     });
+    const today = todayInSurveyTimezone();
+    for (const survey of surveys) {
+      await this.closeIfExpired(survey, today);
+    }
+    return surveys;
   }
 
   async findOne(id: number): Promise<Survey> {
@@ -64,6 +74,7 @@ export class SurveysService {
     if (!survey) {
       throw new NotFoundException(`Survey ${id} not found.`);
     }
+    await this.closeIfExpired(survey);
     return survey;
   }
 
@@ -162,12 +173,38 @@ export class SurveysService {
         'Add at least one question before publishing.',
       );
     }
+    if (survey.closeDate && survey.closeDate < todayInSurveyTimezone()) {
+      throw new BadRequestException(
+        'The closing date has already passed. Choose a later closing date before publishing.',
+      );
+    }
     const row = await this.surveyRepository.findOne({ where: { id } });
     if (row) {
       row.status = SurveyStatus.PUBLISHED;
       await this.surveyRepository.save(row);
     }
     return this.findOne(id);
+  }
+
+  /** Moves a published survey to Closed. Closed surveys keep their results. */
+  async close(id: number): Promise<Survey> {
+    const survey = await this.findOne(id);
+    if (survey.status !== SurveyStatus.PUBLISHED) {
+      throw new ConflictException('Only a published survey can be closed.');
+    }
+    await persistClosed(this.surveyRepository, id);
+    return this.findOne(id);
+  }
+
+  /** Lazy automatic close: persists Closed for an expired Published survey. */
+  private async closeIfExpired(
+    survey: Survey,
+    today: string = todayInSurveyTimezone(),
+  ): Promise<void> {
+    if (isExpired(survey, today)) {
+      await persistClosed(this.surveyRepository, survey.id);
+      survey.status = SurveyStatus.CLOSED;
+    }
   }
 
   /** Questions may only change while the survey is a draft. */

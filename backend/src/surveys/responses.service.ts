@@ -10,6 +10,12 @@ import { validateAnswers } from './answer-validation';
 import { SurveyResponse } from './response.entity';
 import { SubmitResponseDto } from './submit-response.dto';
 import { Survey, SurveyStatus } from './survey.entity';
+import {
+  isExpired,
+  isNotYetOpen,
+  persistClosed,
+  todayInSurveyTimezone,
+} from './survey-lifecycle';
 
 @Injectable()
 export class ResponsesService {
@@ -31,8 +37,17 @@ export class ResponsesService {
     if (!survey) {
       throw new NotFoundException(`Survey ${surveyId} not found.`);
     }
+    const today = todayInSurveyTimezone();
+    if (isExpired(survey, today)) {
+      // Automatic close: persist the transition, then reject like any closed survey.
+      await persistClosed(this.surveyRepository, surveyId);
+      survey.status = SurveyStatus.CLOSED;
+    }
     if (survey.status !== SurveyStatus.PUBLISHED) {
       throw new ConflictException('This survey is not accepting responses.');
+    }
+    if (isNotYetOpen(survey, today)) {
+      throw new ConflictException('This survey is not open yet.');
     }
 
     const { answers, errors } = validateAnswers(survey.questions, dto.answers);

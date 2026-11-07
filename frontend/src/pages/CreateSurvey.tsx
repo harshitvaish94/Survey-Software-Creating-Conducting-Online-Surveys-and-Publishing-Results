@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import ConfirmDialog from '../components/ConfirmDialog'
 import QuestionEditor from '../components/QuestionEditor'
 import { ApiError } from '../api/http'
-import { deleteQuestion, getSurvey, publishSurvey, reorderQuestions, updateSurvey } from '../api/surveys'
+import { closeSurvey, deleteQuestion, getSurvey, publishSurvey, reorderQuestions, updateSurvey } from '../api/surveys'
 import type { SurveyStatus } from '../api/surveys'
 import { newEditorQuestion, toEditorQuestion } from '../lib/questions'
 import type { EditorQuestion } from '../lib/questions'
@@ -180,6 +180,24 @@ export default function CreateSurvey() {
     }
   }
 
+  async function onClose() {
+    if (!window.confirm('Close this survey? It will stop accepting responses and cannot be reopened.')) {
+      return
+    }
+    setSaving(true)
+    setErrors([])
+    setSuccess('')
+    try {
+      const closed = await closeSurvey(surveyId)
+      setStatus(closed.status)
+      setSuccess('Survey closed.')
+    } catch (err) {
+      setErrors([err instanceof Error ? err.message : 'Unable to close the survey.'])
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <form className="form builder" onSubmit={onSubmit} noValidate>
       <div className="builder-main">
@@ -280,9 +298,16 @@ export default function CreateSurvey() {
               Publish survey
             </button>
           ) : (
-            <p className="summary-meta">
-              Status: {status}. Respondent link: <Link to={`/s/${surveyId}`}>/s/{surveyId}</Link>
-            </p>
+            <>
+              <p className="summary-meta">
+                Status: {status}. Respondent link: <Link to={`/s/${surveyId}`}>/s/{surveyId}</Link>
+              </p>
+              {status === 'Published' && (
+                <button type="button" className="btn btn-outline" disabled={saving || busy} onClick={onClose}>
+                  Close survey
+                </button>
+              )}
+            </>
           )}
           <Link to={`/surveys/${surveyId}/preview`} className="btn btn-outline">Preview</Link>
           <Link to="/dashboard" className="link-btn">Back to dashboard</Link>

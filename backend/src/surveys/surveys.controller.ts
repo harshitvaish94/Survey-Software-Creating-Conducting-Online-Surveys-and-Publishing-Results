@@ -39,6 +39,12 @@ export class SurveysController {
     return this.surveysService.publish(id);
   }
 
+  @Post(':id/close')
+  @HttpCode(200)
+  close(@Param('id', ParseIntPipe) id: number) {
+    return this.surveysService.close(id);
+  }
+
   @Put(':id/questions/order')
   reorderQuestions(
     @Param('id', ParseIntPipe) id: number,
