@@ -3,10 +3,10 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import SurveyRespond from './SurveyRespond'
-import { getSurvey, submitResponse } from '../api/surveys'
+import { getSurveyBySlug, submitResponse } from '../api/surveys'
 import type { Survey } from '../api/surveys'
 
-vi.mock('../api/surveys', () => ({ getSurvey: vi.fn(), submitResponse: vi.fn() }))
+vi.mock('../api/surveys', () => ({ getSurveyBySlug: vi.fn(), submitResponse: vi.fn() }))
 
 const survey: Survey = {
   id: 1, title: 'Feedback', description: null, openDate: null, closeDate: null,
@@ -19,9 +19,9 @@ const survey: Survey = {
 
 function renderPage() {
   render(
-    <MemoryRouter initialEntries={['/s/1']}>
+    <MemoryRouter initialEntries={['/s/abc123']}>
       <Routes>
-        <Route path="/s/:id" element={<SurveyRespond />} />
+        <Route path="/s/:slug" element={<SurveyRespond />} />
       </Routes>
     </MemoryRouter>,
   )
@@ -29,8 +29,14 @@ function renderPage() {
 
 describe('SurveyRespond', () => {
   beforeEach(() => {
-    vi.mocked(getSurvey).mockReset().mockResolvedValue(survey)
+    vi.mocked(getSurveyBySlug).mockReset().mockResolvedValue(survey)
     vi.mocked(submitResponse).mockReset().mockResolvedValue({ id: 1 })
+  })
+
+  it('loads the survey by the slug in the link (SMS-24)', async () => {
+    renderPage()
+    await screen.findByRole('button', { name: 'Submit response' })
+    expect(getSurveyBySlug).toHaveBeenCalledWith('abc123')
   })
 
   it('blocks submission while a mandatory question is unanswered', async () => {
@@ -59,7 +65,7 @@ describe('SurveyRespond', () => {
   })
 
   it('does not accept responses for a draft survey', async () => {
-    vi.mocked(getSurvey).mockResolvedValue({ ...survey, status: 'Draft' })
+    vi.mocked(getSurveyBySlug).mockResolvedValue({ ...survey, status: 'Draft' })
     renderPage()
     expect(await screen.findByText('This survey is not accepting responses.')).toBeInTheDocument()
   })

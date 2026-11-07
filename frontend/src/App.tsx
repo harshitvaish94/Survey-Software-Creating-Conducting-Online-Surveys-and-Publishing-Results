@@ -106,7 +106,7 @@ export default function App() {
           />
 
           {/* SMS-18: Public respondent page for published surveys */}
-          <Route path="/s/:id" element={<SurveyRespond />} />
+          <Route path="/s/:slug" element={<SurveyRespond />} />
         </Routes>
       </main>
     </>

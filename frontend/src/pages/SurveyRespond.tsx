@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useParams } from 'react-router-dom'
 import QuestionInput from '../components/QuestionInput'
-import { getSurvey, submitResponse } from '../api/surveys'
+import { getSurveyBySlug, submitResponse } from '../api/surveys'
 import type { Survey } from '../api/surveys'
 import { buildAnswerPayload, validateAnswers } from '../lib/answerValidation'
 import type { AnswerMap } from '../lib/answerValidation'
@@ -15,8 +15,7 @@ type State =
 
 /** Public page where respondents answer a published survey. */
 export default function SurveyRespond() {
-  const { id } = useParams()
-  const surveyId = Number(id)
+  const { slug = '' } = useParams()
   const [state, setState] = useState<State>({ status: 'loading' })
   const [answers, setAnswers] = useState<AnswerMap>({})
   const [fieldErrors, setFieldErrors] = useState<Record<number, string>>({})
@@ -26,7 +25,7 @@ export default function SurveyRespond() {
 
   useEffect(() => {
     let cancelled = false
-    getSurvey(surveyId)
+    getSurveyBySlug(slug)
       .then((survey) => !cancelled && setState({ status: 'ready', survey }))
       .catch((err) =>
         !cancelled &&
@@ -35,7 +34,7 @@ export default function SurveyRespond() {
     return () => {
       cancelled = true
     }
-  }, [surveyId])
+  }, [slug])
 
   if (state.status === 'loading') return <p role="status">Loading survey...</p>
   if (state.status === 'error') {

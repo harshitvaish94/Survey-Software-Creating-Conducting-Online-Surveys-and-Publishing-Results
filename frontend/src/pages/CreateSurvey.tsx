@@ -4,8 +4,8 @@ import { Link, useParams } from 'react-router-dom'
 import ConfirmDialog from '../components/ConfirmDialog'
 import QuestionEditor from '../components/QuestionEditor'
 import { ApiError } from '../api/http'
-import { closeSurvey, deleteQuestion, getSurvey, publishSurvey, reorderQuestions, updateSurvey } from '../api/surveys'
-import type { SurveyStatus } from '../api/surveys'
+import { closeSurvey, deleteQuestion, getShareInfo, getSurvey, publishSurvey, reorderQuestions, updateSurvey } from '../api/surveys'
+import type { ShareInfo, SurveyStatus } from '../api/surveys'
 import { newEditorQuestion, toEditorQuestion } from '../lib/questions'
 import type { EditorQuestion } from '../lib/questions'
 import { validateQuestion, validateSurveyForm } from '../lib/questionValidation'
@@ -32,6 +32,7 @@ export default function CreateSurvey() {
   const [status, setStatus] = useState<SurveyStatus>('Draft')
   const [busy, setBusy] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
+  const [share, setShare] = useState<ShareInfo | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -45,6 +46,12 @@ export default function CreateSurvey() {
         setQuestions(s.questions.map(toEditorQuestion))
         setStatus(s.status)
         setLoad({ status: 'ready' })
+        if (s.status !== 'Draft') {
+          // The link is a convenience: the page still works if it cannot be loaded.
+          void Promise.resolve(getShareInfo(surveyId))
+            .then((info) => !cancelled && info && setShare(info))
+            .catch(() => undefined)
+        }
       })
       .catch((err) => {
         if (cancelled) return
@@ -172,11 +179,23 @@ export default function CreateSurvey() {
     try {
       const published = await publishSurvey(surveyId)
       setStatus(published.status)
+      setShare({ slug: published.slug, link: published.link, qrCodeUrl: published.qrCodeUrl })
       setSuccess('Survey published.')
     } catch (err) {
       setErrors([err instanceof Error ? err.message : 'Unable to publish the survey.'])
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function onCopyLink() {
+    if (!share) return
+    try {
+      await navigator.clipboard.writeText(share.link)
+      setErrors([])
+      setSuccess('Link copied.')
+    } catch {
+      setErrors(['Could not copy the link. Select it and copy it manually.'])
     }
   }
 
@@ -299,9 +318,18 @@ export default function CreateSurvey() {
             </button>
           ) : (
             <>
-              <p className="summary-meta">
-                Status: {status}. Respondent link: <Link to={`/s/${surveyId}`}>/s/{surveyId}</Link>
-              </p>
+              <p className="summary-meta">Status: {status}.</p>
+              {share && (
+                <div className="share-panel">
+                  <p className="summary-meta">
+                    Respondent link: <a href={share.link}>{share.link}</a>
+                  </p>
+                  <button type="button" className="btn btn-outline" onClick={onCopyLink}>
+                    Copy link
+                  </button>
+                  <img src={share.qrCodeUrl} alt="QR code for the survey link" width={160} height={160} />
+                </div>
+              )}
               {status === 'Published' && (
                 <button type="button" className="btn btn-outline" disabled={saving || busy} onClick={onClose}>
                   Close survey

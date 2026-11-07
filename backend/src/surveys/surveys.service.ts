@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -17,6 +18,8 @@ import {
   todayInSurveyTimezone,
 } from './survey-lifecycle';
 import { UpdateSurveyDto } from './update-survey.dto';
+import { buildShareInfo, generateSlug } from './sharing';
+import type { ShareInfo } from './sharing';
 
 interface PendingQuestion {
   id?: number;
@@ -63,6 +66,39 @@ export class SurveysService {
       await this.closeIfExpired(survey, today);
     }
     return surveys;
+  }
+
+  /** Public lookup for the shareable link. Drafts have no slug, so they never match. */
+  async findBySlug(slug: string): Promise<Survey> {
+    const survey = await this.surveyRepository.findOne({
+      where: { slug },
+      relations: { questions: true },
+      order: { questions: { position: 'ASC' } },
+    });
+    if (!survey || survey.status === SurveyStatus.DRAFT) {
+      throw new NotFoundException('Survey not found.');
+    }
+    await this.closeIfExpired(survey);
+    return survey;
+  }
+
+  /** Link and QR code of a published (or later closed) survey. */
+  async getShare(id: number): Promise<ShareInfo> {
+    const survey = await this.findOne(id);
+    if (survey.status === SurveyStatus.DRAFT) {
+      throw new ConflictException('Publish the survey to get its link.');
+    }
+    let slug = survey.slug;
+    if (!slug) {
+      // Surveys published before slugs existed get one the first time they are shared.
+      slug = await this.uniqueSlug();
+      const row = await this.surveyRepository.findOne({ where: { id } });
+      if (row) {
+        row.slug = slug;
+        await this.surveyRepository.save(row);
+      }
+    }
+    return buildShareInfo(slug);
   }
 
   async findOne(id: number): Promise<Survey> {
@@ -163,7 +199,7 @@ export class SurveysService {
   }
 
   /** Moves a draft survey to Published. It needs at least one question. */
-  async publish(id: number): Promise<Survey> {
+  async publish(id: number): Promise<Survey & ShareInfo> {
     const survey = await this.findOne(id);
     if (survey.status !== SurveyStatus.DRAFT) {
       throw new ConflictException('This survey has already been published.');
@@ -181,9 +217,22 @@ export class SurveysService {
     const row = await this.surveyRepository.findOne({ where: { id } });
     if (row) {
       row.status = SurveyStatus.PUBLISHED;
+      row.slug = await this.uniqueSlug();
       await this.surveyRepository.save(row);
     }
-    return this.findOne(id);
+    const published = await this.findOne(id);
+    return { ...published, ...(await buildShareInfo(published.slug as string)) };
+  }
+
+  /** Random slug that no other survey uses (the unique index is the backstop). */
+  private async uniqueSlug(): Promise<string> {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const slug = generateSlug();
+      if (!(await this.surveyRepository.findOne({ where: { slug } }))) {
+        return slug;
+      }
+    }
+    throw new InternalServerErrorException('Could not create a unique link.');
   }
 
   /** Moves a published survey to Closed. Closed surveys keep their results. */

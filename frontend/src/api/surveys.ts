@@ -11,10 +11,19 @@ export interface Survey {
   openDate: string | null
   closeDate: string | null
   status: SurveyStatus
+  slug?: string | null
   createdAt: string
   updatedAt: string
   questions: ServerQuestion[]
 }
+
+export interface ShareInfo {
+  slug: string
+  link: string
+  qrCodeUrl: string
+}
+
+export type PublishedSurvey = Survey & ShareInfo
 
 export interface SurveyInput {
   title: string
@@ -47,7 +56,12 @@ export const listSurveys = () => request<Survey[]>('/surveys')
 export const getSurvey = (id: number) => request<Survey>(`/surveys/${id}`)
 
 export const publishSurvey = (id: number) =>
-  request<Survey>(`/surveys/${id}/publish`, { method: 'POST' })
+  request<PublishedSurvey>(`/surveys/${id}/publish`, { method: 'POST' })
+
+export const getShareInfo = (id: number) => request<ShareInfo>(`/surveys/${id}/share`)
+
+export const getSurveyBySlug = (slug: string) =>
+  request<Survey>(`/surveys/public/${encodeURIComponent(slug)}`)
 
 export const closeSurvey = (id: number) =>
   request<Survey>(`/surveys/${id}/close`, { method: 'POST' })

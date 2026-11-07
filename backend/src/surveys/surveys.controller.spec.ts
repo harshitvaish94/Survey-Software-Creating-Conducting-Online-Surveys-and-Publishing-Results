@@ -9,6 +9,8 @@ function setup() {
     update: vi.fn().mockResolvedValue('updated'),
     publish: vi.fn().mockResolvedValue('published'),
     close: vi.fn().mockResolvedValue('closed'),
+    findBySlug: vi.fn().mockResolvedValue('by-slug'),
+    getShare: vi.fn().mockResolvedValue('shared'),
     reorderQuestions: vi.fn().mockResolvedValue(['ordered']),
     removeQuestion: vi.fn().mockResolvedValue(undefined),
   };
@@ -38,6 +40,18 @@ describe('SurveysController', () => {
     const { controller, service } = setup();
     await expect(controller.close(5)).resolves.toBe('closed');
     expect(service.close).toHaveBeenCalledWith(5);
+  });
+
+  it('delegates findBySlug', async () => {
+    const { controller, service } = setup();
+    await expect(controller.findBySlug('abc')).resolves.toBe('by-slug');
+    expect(service.findBySlug).toHaveBeenCalledWith('abc');
+  });
+
+  it('delegates share', async () => {
+    const { controller, service } = setup();
+    await expect(controller.share(5)).resolves.toBe('shared');
+    expect(service.getShare).toHaveBeenCalledWith(5);
   });
 
   it('delegates create', async () => {

@@ -28,6 +28,17 @@ export class SurveysController {
     return this.surveysService.findAll();
   }
 
+  /** Public: resolve a shareable link. Declared before ':id' routes. */
+  @Get('public/:slug')
+  findBySlug(@Param('slug') slug: string) {
+    return this.surveysService.findBySlug(slug);
+  }
+
+  @Get(':id/share')
+  share(@Param('id', ParseIntPipe) id: number) {
+    return this.surveysService.getShare(id);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.surveysService.findOne(id);

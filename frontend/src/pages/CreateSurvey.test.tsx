@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import CreateSurvey from './CreateSurvey'
 import { ApiError } from '../api/http'
-import { closeSurvey, deleteQuestion, getSurvey, reorderQuestions, updateSurvey } from '../api/surveys'
+import { closeSurvey, deleteQuestion, getShareInfo, getSurvey, publishSurvey, reorderQuestions, updateSurvey } from '../api/surveys'
 import type { Survey } from '../api/surveys'
 
 vi.mock('../api/surveys', () => ({
@@ -12,9 +12,12 @@ vi.mock('../api/surveys', () => ({
   updateSurvey: vi.fn(),
   publishSurvey: vi.fn(),
   closeSurvey: vi.fn(),
+  getShareInfo: vi.fn(),
   deleteQuestion: vi.fn(),
   reorderQuestions: vi.fn(),
 }))
+
+const share = { slug: 'abc123XYZ789', link: 'http://localhost:5173/s/abc123XYZ789', qrCodeUrl: 'data:image/png;base64,AAAA' }
 
 const survey: Survey = {
   id: 1, title: 'Feedback', description: null, openDate: null, closeDate: null,
@@ -44,6 +47,8 @@ describe('CreateSurvey (builder)', () => {
     vi.mocked(deleteQuestion).mockReset().mockResolvedValue(undefined)
     vi.mocked(reorderQuestions).mockReset().mockResolvedValue([])
     vi.mocked(closeSurvey).mockReset()
+    vi.mocked(getShareInfo).mockReset().mockResolvedValue(share)
+    vi.mocked(publishSurvey).mockReset()
   })
 
   it('loads an existing draft with its questions and required settings', async () => {
@@ -140,6 +145,51 @@ describe('CreateSurvey (builder)', () => {
     expect(screen.getAllByRole('button', { name: 'Delete' })[0]).toBeDisabled()
     expect(screen.getByRole('button', { name: '+ Add a question' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled()
+  })
+
+  describe('shareable link and QR code (SMS-24)', () => {
+    it('shows no link while the survey is a draft', async () => {
+      renderPage()
+      await screen.findByDisplayValue('Feedback')
+      expect(getShareInfo).not.toHaveBeenCalled()
+      expect(screen.queryByAltText('QR code for the survey link')).not.toBeInTheDocument()
+    })
+
+    it('shows the link and QR code of a published survey', async () => {
+      vi.mocked(getSurvey).mockResolvedValue({ ...survey, status: 'Published' })
+      renderPage()
+      expect(await screen.findByRole('link', { name: share.link })).toHaveAttribute('href', share.link)
+      expect(screen.getByAltText('QR code for the survey link')).toHaveAttribute('src', share.qrCodeUrl)
+    })
+
+    it('shows the link and QR code right after publishing', async () => {
+      vi.mocked(publishSurvey).mockResolvedValue({ ...survey, status: 'Published', ...share })
+      vi.spyOn(window, 'confirm').mockReturnValue(true)
+      renderPage()
+      const user = userEvent.setup()
+      await user.click(await screen.findByRole('button', { name: 'Publish survey' }))
+      expect(await screen.findByRole('link', { name: share.link })).toBeInTheDocument()
+      expect(screen.getByAltText('QR code for the survey link')).toBeInTheDocument()
+      vi.restoreAllMocks()
+    })
+
+    it('copies the link to the clipboard', async () => {
+      vi.mocked(getSurvey).mockResolvedValue({ ...survey, status: 'Published' })
+      renderPage()
+      const user = userEvent.setup()
+      await screen.findByRole('link', { name: share.link })
+      await user.click(screen.getByRole('button', { name: 'Copy link' }))
+      expect(await screen.findByText('Link copied.')).toBeInTheDocument()
+      expect(await navigator.clipboard.readText()).toBe(share.link)
+    })
+
+    it('still renders the page when the link cannot be loaded', async () => {
+      vi.mocked(getSurvey).mockResolvedValue({ ...survey, status: 'Published' })
+      vi.mocked(getShareInfo).mockRejectedValue(new Error('boom'))
+      renderPage()
+      expect(await screen.findByText(/can no longer be edited, reordered or deleted/)).toBeInTheDocument()
+      expect(screen.queryByAltText('QR code for the survey link')).not.toBeInTheDocument()
+    })
   })
 
   describe('closing a survey (SMS-23)', () => {

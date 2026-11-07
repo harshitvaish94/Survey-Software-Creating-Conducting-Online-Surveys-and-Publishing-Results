@@ -39,6 +39,10 @@ export class Survey {
   })
   status: SurveyStatus;
 
+  /** Unguessable public identifier for the shareable link; set on publish. */
+  @Column({ type: 'varchar', length: 32, unique: true, nullable: true })
+  slug: string | null;
+
   @CreateDateColumn()
   createdAt: Date;
 
