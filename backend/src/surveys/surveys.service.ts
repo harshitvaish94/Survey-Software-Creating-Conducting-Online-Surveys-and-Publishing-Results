@@ -65,23 +65,25 @@ export class SurveysService {
     return this.findOne(surveyId);
   }
 
-  async findAll(): Promise<Survey[]> {
-    const surveys = await this.surveyRepository.find({
+    /** Surveys the user may manage: administrators see all, creators only their own. */
   /** Surveys the user may manage: administrators see all, creators only their own. */
   findAllFor(user: AuthUser): Promise<Survey[]> {
     return this.findAll(user.role === UserRole.ADMIN ? undefined : user.id);
   }
 
-  findAll(ownerId?: number): Promise<Survey[]> {
-    return this.surveyRepository.find({
+  async findAll(ownerId?: number): Promise<Survey[]> {
+    const surveys = await this.surveyRepository.find({
       where: ownerId === undefined ? undefined : { ownerId },
       relations: { questions: true },
       order: { createdAt: 'DESC', questions: { position: 'ASC' } },
     });
+
     const today = todayInSurveyTimezone();
+
     for (const survey of surveys) {
       await this.closeIfExpired(survey, today);
     }
+
     return surveys;
   }
 
@@ -129,6 +131,20 @@ export class SurveysService {
     }
     await this.closeIfExpired(survey);
     return survey;
+  }
+
+  /** Verifies that the user owns the survey or is an administrator. */
+  async assertOwner(id: number, user: AuthUser | undefined): Promise<void> {
+    const survey = await this.surveyRepository.findOne({
+      where: { id },
+      select: { id: true, ownerId: true },
+    });
+
+    if (!survey) {
+      throw new NotFoundException(`Survey ${id} not found.`);
+    }
+
+    assertCanManage(survey.ownerId, user);
   }
 
   async update(id: number, dto: UpdateSurveyDto): Promise<Survey> {

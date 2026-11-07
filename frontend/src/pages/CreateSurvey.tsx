@@ -9,6 +9,7 @@ import type { ShareInfo, SurveyStatus } from '../api/surveys'
 import { newEditorQuestion, toEditorQuestion } from '../lib/questions'
 import type { EditorQuestion } from '../lib/questions'
 import { validateQuestion, validateSurveyForm } from '../lib/questionValidation'
+import { useAuth } from '../auth/context'
 
 const fmt = (d: string) =>
   d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
