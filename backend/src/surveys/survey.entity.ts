@@ -43,6 +43,13 @@ export class Survey {
   })
   status: SurveyStatus;
 
+  /**
+   * SMS-27: when false (the default) each respondent may submit only once;
+   * repeats are refused using the submission_guard table.
+   */
+  @Column({ type: 'boolean', default: false })
+  allowMultipleResponses: boolean;
+
   /** Creator who owns the survey. Only the owner (or an administrator) may manage it. */
   @Index()
   @Column({ type: 'int', nullable: true })
