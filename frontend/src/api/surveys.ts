@@ -51,6 +51,9 @@ export const getSurvey = (id: number) => request<Survey>(`/surveys/${id}`)
 export const publishSurvey = (id: number) =>
   request<Survey>(`/surveys/${id}/publish`, { method: 'POST' })
 
+export const closeSurvey = (id: number) =>
+  request<Survey>(`/surveys/${id}/close`, { method: 'POST' })
+
 export const submitResponse = (id: number, answers: Record<string, unknown>) =>
   request<{ id: number }>(`/surveys/${id}/responses`, { method: 'POST', body: JSON.stringify({ answers }) })
 

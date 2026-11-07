@@ -18,6 +18,7 @@ function setup(
     findOne: vi.fn().mockResolvedValue(survey),
     update: vi.fn().mockResolvedValue('updated'),
     publish: vi.fn().mockResolvedValue('published'),
+    close: vi.fn().mockResolvedValue('closed'),
     reorderQuestions: vi.fn().mockResolvedValue(['ordered']),
     removeQuestion: vi.fn().mockResolvedValue(undefined),
     assertOwner: vi.fn().mockResolvedValue(undefined),
@@ -49,7 +50,13 @@ describe('SurveysController', () => {
     }
   });
 
-  it('creates the survey owned by the logged-in user', async () => {
+  it('delegates close', async () => {
+    const { controller, service } = setup();
+    await expect(controller.close(5)).resolves.toBe('closed');
+    expect(service.close).toHaveBeenCalledWith(5);
+  });
+
+  it('delegates create', async () => {
     const { controller, service } = setup();
     const dto = { title: 'T' };
     await expect(controller.create(dto, alice)).resolves.toBe('created');

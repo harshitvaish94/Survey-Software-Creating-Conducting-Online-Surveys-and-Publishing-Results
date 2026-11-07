@@ -1,10 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import CreateSurvey from './CreateSurvey'
 import { ApiError } from '../api/http'
-import { deleteQuestion, getSurvey, reorderQuestions, updateSurvey } from '../api/surveys'
+import { closeSurvey, deleteQuestion, getSurvey, reorderQuestions, updateSurvey } from '../api/surveys'
 import type { Survey } from '../api/surveys'
 import type { AuthUser } from '../api/auth'
 import { AuthContext } from '../auth/context'
@@ -13,6 +13,7 @@ vi.mock('../api/surveys', () => ({
   getSurvey: vi.fn(),
   updateSurvey: vi.fn(),
   publishSurvey: vi.fn(),
+  closeSurvey: vi.fn(),
   deleteQuestion: vi.fn(),
   reorderQuestions: vi.fn(),
 }))
@@ -48,6 +49,7 @@ describe('CreateSurvey (builder)', () => {
     vi.mocked(updateSurvey).mockReset().mockResolvedValue(survey)
     vi.mocked(deleteQuestion).mockReset().mockResolvedValue(undefined)
     vi.mocked(reorderQuestions).mockReset().mockResolvedValue([])
+    vi.mocked(closeSurvey).mockReset()
   })
 
   it('loads an existing draft with its questions and required settings', async () => {
@@ -144,6 +146,50 @@ describe('CreateSurvey (builder)', () => {
     expect(screen.getAllByRole('button', { name: 'Delete' })[0]).toBeDisabled()
     expect(screen.getByRole('button', { name: '+ Add a question' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled()
+  })
+
+  describe('closing a survey (SMS-23)', () => {
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it('does not offer Close for a draft survey', async () => {
+      renderPage()
+      await screen.findByDisplayValue('Feedback')
+      expect(screen.queryByRole('button', { name: 'Close survey' })).not.toBeInTheDocument()
+    })
+
+    it('closes a published survey after confirmation and removes the button', async () => {
+      vi.mocked(getSurvey).mockResolvedValue({ ...survey, status: 'Published' })
+      vi.mocked(closeSurvey).mockResolvedValue({ ...survey, status: 'Closed' })
+      vi.spyOn(window, 'confirm').mockReturnValue(true)
+      renderPage()
+      const user = userEvent.setup()
+      await user.click(await screen.findByRole('button', { name: 'Close survey' }))
+      expect(closeSurvey).toHaveBeenCalledWith(1)
+      expect(await screen.findByText('Survey closed.')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Close survey' })).not.toBeInTheDocument()
+    })
+
+    it('keeps the survey published when the confirmation is cancelled', async () => {
+      vi.mocked(getSurvey).mockResolvedValue({ ...survey, status: 'Published' })
+      vi.spyOn(window, 'confirm').mockReturnValue(false)
+      renderPage()
+      const user = userEvent.setup()
+      await user.click(await screen.findByRole('button', { name: 'Close survey' }))
+      expect(closeSurvey).not.toHaveBeenCalled()
+      expect(screen.getByRole('button', { name: 'Close survey' })).toBeInTheDocument()
+    })
+
+    it('shows the server message when closing fails', async () => {
+      vi.mocked(getSurvey).mockResolvedValue({ ...survey, status: 'Published' })
+      vi.mocked(closeSurvey).mockRejectedValue(new ApiError('Only a published survey can be closed.', 409))
+      vi.spyOn(window, 'confirm').mockReturnValue(true)
+      renderPage()
+      const user = userEvent.setup()
+      await user.click(await screen.findByRole('button', { name: 'Close survey' }))
+      expect(await screen.findByText('Only a published survey can be closed.')).toBeInTheDocument()
+    })
   })
 
   it('shows an error when the survey cannot be loaded', async () => {
