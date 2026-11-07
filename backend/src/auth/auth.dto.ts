@@ -1,8 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { UserRole } from '../users/user.entity';
 
-/** Roles a person may pick for themselves. Administrators are created by an administrator. */
 export const SELF_SERVICE_ROLES = [UserRole.CREATOR, UserRole.RESPONDENT] as const;
 
 export class LoginDto {
@@ -32,6 +38,26 @@ export class RegisterDto {
 
   @ApiPropertyOptional({ enum: SELF_SERVICE_ROLES, default: UserRole.CREATOR })
   @IsOptional()
-  @IsIn(SELF_SERVICE_ROLES, { message: 'Role must be Creator or Respondent.' })
+  @IsIn(SELF_SERVICE_ROLES)
   role?: UserRole;
+}
+
+export class ForgotPasswordDto {
+  @ApiProperty({ example: 'you@example.com' })
+  @IsEmail()
+  @MaxLength(254)
+  email: string;
+}
+
+export class ResetPasswordDto {
+  @ApiProperty()
+  @IsString()
+  @MinLength(32)
+  token: string;
+
+  @ApiProperty({ minLength: 8, maxLength: 128 })
+  @IsString()
+  @MinLength(8)
+  @MaxLength(128)
+  newPassword: string;
 }

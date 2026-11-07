@@ -54,6 +54,9 @@ export default function Login() {
               </button>
             </div>
           </label>
+          <p className="switch">
+            <Link to="/forgot-password">Forgot password?</Link>
+          </p>
           {error && <p className="error" role="alert">{error}</p>}
           <button type="submit" className="btn" disabled={loading}>
             {loading ? 'Logging in...' : 'Log in'}

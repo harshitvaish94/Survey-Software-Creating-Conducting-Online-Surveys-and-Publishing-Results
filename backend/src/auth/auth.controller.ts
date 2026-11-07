@@ -3,7 +3,12 @@ import { ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { SESSION_COOKIE, sessionCookieOptions } from './auth.constants';
 import type { AuthUser } from './auth.constants';
-import { LoginDto, RegisterDto } from './auth.dto';
+import {
+  LoginDto,
+  RegisterDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+} from './auth.dto';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './current-user.decorator';
 import { Public } from './access.decorators';
@@ -13,14 +18,12 @@ import { Public } from './access.decorators';
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
-  /** Creates the account. The person then logs in (the UI sends them to the login page). */
   @Public()
   @Post('register')
   register(@Body() dto: RegisterDto): Promise<AuthUser> {
     return this.auth.register(dto);
   }
 
-  /** Starts a session: the JWT goes in an HTTP-only cookie, never in the response body. */
   @Public()
   @Post('login')
   @HttpCode(200)
@@ -31,6 +34,20 @@ export class AuthController {
     const { user, token } = await this.auth.login(dto);
     res.cookie(SESSION_COOKIE, token, sessionCookieOptions());
     return user;
+  }
+
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(200)
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.auth.forgotPassword(dto.email);
+  }
+
+  @Public()
+  @Post('reset-password')
+  @HttpCode(200)
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.auth.resetPassword(dto.token, dto.newPassword);
   }
 
   @Public()
