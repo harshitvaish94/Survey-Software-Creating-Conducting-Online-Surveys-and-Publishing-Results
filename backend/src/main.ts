@@ -1,18 +1,26 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS for local and mobile frontend access
+  // Parse the HTTP-only session cookie (SMS-14)
+  app.use(cookieParser());
+
+  // Enable CORS for frontend access with credentials
+  const frontendOrigin = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
+
   app.enableCors({
     origin: [
+      frontendOrigin,
       'http://localhost:5173',
       'http://127.0.0.1:5173',
       'http://10.249.140.189:5173',
     ],
+    credentials: true,
   });
 
   // Enable validation
@@ -28,6 +36,7 @@ async function bootstrap() {
     .setTitle('Survey Management System API')
     .setDescription('API documentation for the Survey Management System')
     .setVersion('1.0')
+    .addCookieAuth('sms_session')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

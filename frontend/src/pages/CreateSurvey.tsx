@@ -13,10 +13,16 @@ import { validateQuestion, validateSurveyForm } from '../lib/questionValidation'
 const fmt = (d: string) =>
   d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
 
-type Load = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready' }
+type Load =
+  | { status: 'loading' }
+  | { status: 'error'; message: string; title?: string }
+  | { status: 'ready' }
 
 export default function CreateSurvey() {
   const { id } = useParams()
+  const { user } = useAuth()
+  const userId = user?.id
+  const isAdmin = user?.role === 'Administrator'
   const surveyId = Number(id)
 
   const [load, setLoad] = useState<Load>({ status: 'loading' })
@@ -39,6 +45,16 @@ export default function CreateSurvey() {
     getSurvey(surveyId)
       .then((s) => {
         if (cancelled) return
+        // SMS-15: published surveys load for anyone (respondents need them), so the
+        // builder checks ownership itself. The API also refuses non-owners with 403.
+        if (!isAdmin && s.ownerId !== userId) {
+          setLoad({
+            status: 'error',
+            title: 'Not your survey',
+            message: 'You can only edit surveys you created. You can still take this survey from its link.',
+          })
+          return
+        }
         setTitle(s.title)
         setDescription(s.description ?? '')
         setOpenDate(s.openDate ?? '')
@@ -60,13 +76,13 @@ export default function CreateSurvey() {
     return () => {
       cancelled = true
     }
-  }, [surveyId])
+  }, [surveyId, userId, isAdmin])
 
   if (load.status === 'loading') return <p role="status">Loading survey...</p>
   if (load.status === 'error') {
     return (
       <div className="auth-card">
-        <h1>Survey not found</h1>
+        <h1>{load.title ?? 'Survey not found'}</h1>
         <p className="error" role="alert">{load.message}</p>
         <p><Link to="/dashboard">Back to dashboard</Link></p>
       </div>

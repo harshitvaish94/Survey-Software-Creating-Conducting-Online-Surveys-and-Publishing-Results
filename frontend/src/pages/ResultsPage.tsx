@@ -1,112 +1,183 @@
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { Bar } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import { useEffect, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import { Bar, Pie } from 'react-chartjs-2'
+import { ArcElement, BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, Tooltip } from 'chart.js'
+import { getResults } from '../api/surveys'
+import type { QuestionResult, SurveyResults } from '../api/surveys'
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend)
 
-export default function ResultsPage() {
-  const { id } = useParams<{ id: string }>();
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+const PALETTE = ['#2a44e8', '#ffd93d', '#2fbf8f', '#ff6b6b', '#8f6bff', '#ffa94d', '#4dabf7', '#12172b']
 
-  useEffect(() => {
-    fetch(`/api/surveys/${id}/results`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    })
-      .then(res => res.json())
-      .then(data => {
-        setData(data);
-        setLoading(false);
-      });
-  }, [id]);
+type State =
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'ready'; results: SurveyResults }
 
-  const handleExportCSV = async () => {
-    try {
-      const response = await fetch(`/api/surveys/${id}/export/csv`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
+function ChoiceResult({ question }: { question: QuestionResult }) {
+  const counts = question.counts ?? []
+  const total = counts.reduce((sum, c) => sum + c.count, 0)
+  if (total === 0) return <p className="hint">No answers yet.</p>
 
-      if (!response.ok) throw new Error('Export failed');
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `survey-${id}-results.csv`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (err) {
-      console.error('Failed to export CSV:', err);
-    }
-  };
-
-  if (loading) return <div className="p-6">Loading results and charts...</div>;
+  const labels = counts.map((c) => c.label)
+  const data = counts.map((c) => c.count)
+  const colors = counts.map((_, i) => PALETTE[i % PALETTE.length])
+  const usePie = question.type === 'single' || question.type === 'dropdown'
+  const percent = (count: number) => Math.round((count / total) * 1000) / 10
+  const summary = counts.map((c) => `${c.label}: ${c.count}`).join(', ')
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold mb-1">{data.title} - Results & Charts</h1>
-          <p className="text-gray-600">Total Responses: <strong>{data.totalResponses}</strong></p>
-        </div>
+    <div className="res-grid">
+      <div className="res-chart" role="img" aria-label={`${usePie ? 'Pie' : 'Bar'} chart of answers. ${summary}`}>
+        {usePie ? (
+          <Pie
+            data={{ labels, datasets: [{ data, backgroundColor: colors, borderColor: '#12172b', borderWidth: 2 }] }}
+            options={{ responsive: true, maintainAspectRatio: false }}
+          />
+        ) : (
+          <Bar
+            data={{ labels, datasets: [{ label: 'Votes', data, backgroundColor: colors, borderColor: '#12172b', borderWidth: 2 }] }}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+            }}
+          />
+        )}
+      </div>
+      <table className="res-table">
+        <caption className="res-sr">Answer counts</caption>
+        <thead>
+          <tr>
+            <th scope="col">Answer</th>
+            <th scope="col">Votes</th>
+            <th scope="col">Share</th>
+          </tr>
+        </thead>
+        <tbody>
+          {counts.map((c) => (
+            <tr key={c.label}>
+              <th scope="row">{c.label}</th>
+              <td>{c.count}</td>
+              <td>{percent(c.count)}%</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function RatingResult({ question }: { question: QuestionResult }) {
+  const n = question.totalRatings ?? 0
+  if (n === 0) return <p className="hint">No answers yet.</p>
+  return (
+    <p className="res-rating">
+      Average rating: <strong>{(question.average ?? 0).toFixed(1)}</strong> from {n} {n === 1 ? 'rating' : 'ratings'}
+    </p>
+  )
+}
+
+function TextResult({ question }: { question: QuestionResult }) {
+  const answers = (question.textAnswers ?? []).filter((a) => a && a.trim())
+  if (answers.length === 0) return <p className="hint">No answers yet.</p>
+  return (
+    <ul className="res-text">
+      {answers.map((a, i) => (
+        <li key={i}>{a}</li>
+      ))}
+    </ul>
+  )
+}
+
+export default function ResultsPage() {
+  const { id } = useParams()
+  const surveyId = Number(id)
+  const [state, setState] = useState<State>({ status: 'loading' })
+  const [attempt, setAttempt] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    if (!Number.isInteger(surveyId)) {
+      return
+    }
+    getResults(surveyId)
+      .then((results) => !cancelled && setState({ status: 'ready', results }))
+      .catch(
+        (err) =>
+          !cancelled &&
+          setState({ status: 'error', message: err instanceof Error ? err.message : 'Unable to load results.' }),
+      )
+    return () => {
+      cancelled = true
+    }
+  }, [surveyId, attempt])
+
+  if (!Number.isInteger(surveyId)) {
+    return (
+      <section className="hero">
+        <h1>Results not found</h1>
+        <Link to="/dashboard" className="btn">Back to dashboard</Link>
+      </section>
+    )
+  }
+
+  if (state.status === 'loading') return <p role="status">Loading results…</p>
+
+  if (state.status === 'error') {
+    return (
+      <section className="hero">
+        <h1>Could not load results</h1>
+        <p role="alert">{state.message}</p>
         <button
-          onClick={handleExportCSV}
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition shadow"
+          type="button"
+          className="btn"
+          onClick={() => {
+            setState({ status: 'loading' })
+            setAttempt((a) => a + 1)
+          }}
         >
-          Export CSV
+          Try again
         </button>
+      </section>
+    )
+  }
+
+  const { results } = state
+  return (
+    <>
+      <div className="res-head">
+        <div>
+          <Link to="/dashboard" className="res-back">← Dashboard</Link>
+          <h1>{results.title}</h1>
+          <p className="lead">
+            {results.totalResponses} {results.totalResponses === 1 ? 'response' : 'responses'}
+          </p>
+        </div>
       </div>
 
-      {data.questions.map((q: any, index: number) => (
-        <div key={q.id} className="bg-white p-4 shadow rounded mb-6 border">
-          <h3 className="font-semibold text-lg mb-2">{index + 1}. {q.prompt}</h3>
-          
-          {/* Choice-based questions chart (SVY-F-014 / TC-Res-02) */}
-          {q.counts && (
-            <div>
-              <div className="h-64 mb-4">
-                <Bar
-                  data={{
-                    labels: q.counts.map((c: any) => c.label),
-                    datasets: [{
-                      label: 'Response Count',
-                      data: q.counts.map((c: any) => c.count),
-                      backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                      borderColor: 'rgba(54, 162, 235, 1)',
-                      borderWidth: 1
-                    }]
-                  }}
-                  options={{ responsive: true, maintainAspectRatio: false }}
-                />
-              </div>
-              <ul className="text-sm text-gray-700 mt-2 border-t pt-2">
-                {q.counts.map((c: any, i: number) => (
-                  <li key={i}>{c.label}: <strong>{c.count}</strong> votes ({c.percent}%)</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Rating scale summary */}
-          {q.average !== undefined && (
-            <p className="text-lg">Average Rating: <strong>{q.average} / 5</strong> ({q.totalRatings} total ratings)</p>
-          )}
-
-          {/* Text responses list */}
-          {q.textAnswers && (
-            <ul className="list-disc pl-5 mt-2 max-h-40 overflow-y-auto bg-gray-50 p-2 rounded">
-              {q.textAnswers.map((ans: string, i: number) => (
-                <li key={i} className="text-sm text-gray-800 py-1">{ans}</li>
-              ))}
-            </ul>
-          )}
-        </div>
-      ))}
-    </div>
-  );
+      {results.totalResponses === 0 ? (
+        <section className="hero">
+          <h2>No responses yet</h2>
+          <p>Share the survey link <strong>/s/{surveyId}</strong> and the results will appear here.</p>
+        </section>
+      ) : (
+        results.questions.map((q, i) => (
+          <section key={q.id} className="res-card" aria-labelledby={`rq-${q.id}`}>
+            <h2 id={`rq-${q.id}`}>
+              {i + 1}. {q.text ?? q.prompt ?? ''}
+            </h2>
+            {q.type === 'rating' ? (
+              <RatingResult question={q} />
+            ) : q.type === 'text' ? (
+              <TextResult question={q} />
+            ) : (
+              <ChoiceResult question={q} />
+            )}
+          </section>
+        ))
+      )}
+    </>
+  )
 }

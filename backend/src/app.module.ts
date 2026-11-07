@@ -2,25 +2,24 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { Question } from './surveys/question.entity';
-import { SurveyResponse } from './surveys/response.entity';
-import { Survey } from './surveys/survey.entity';
+import { dataSourceOptions } from './database/data-source';
+import { ResultsModule } from './results/results.module';
 import { SurveysModule } from './surveys/surveys.module';
 import { HealthModule } from './health/health.module';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: process.env.DB_HOST || 'localhost',
-      port: Number(process.env.DB_PORT || 5432),
-      username: process.env.DB_USER || 'sms',
-      password: process.env.DB_PASSWORD || 'sms_password',
-      database: process.env.DB_NAME || 'sms_db',
-      entities: [Survey, Question, SurveyResponse],
-      synchronize: true,
+      ...dataSourceOptions,
+      // Apply any pending migrations on start-up so a fresh database is ready to use.
+      migrationsRun: process.env.DB_MIGRATIONS_RUN !== 'false',
     }),
+    UsersModule,
+    AuthModule,
     SurveysModule,
+    ResultsModule,
     HealthModule,
   ],
   controllers: [AppController],

@@ -1,14 +1,25 @@
-import { Routes, Route, NavLink, useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import {
+  Routes,
+  Route,
+  NavLink,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import CreateSurvey from './pages/CreateSurvey'
 import ProtectedRoute from './auth/ProtectedRoute'
-import { useAuth } from './auth/context'
+import { CREATOR_ROLES, useAuth } from './auth/context'
 import SurveyCreate from './pages/SurveyCreate'
 import SurveyPreview from './pages/SurveyPreview'
 import SurveyRespond from './pages/SurveyRespond'
+import ResultsPage from './pages/ResultsPage'
+import { pageTitle } from './lib/pageTitle'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 
 function Mark() {
   return (
@@ -22,6 +33,12 @@ function Mark() {
 export default function App() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
+
+  // SMS-37: Set an appropriate title for each page.
+  useEffect(() => {
+    document.title = pageTitle(pathname)
+  }, [pathname])
 
   function onLogout() {
     signOut()
@@ -30,6 +47,18 @@ export default function App() {
 
   return (
     <>
+      {/* SMS-37: Accessibility skip link */}
+      <a
+        href="#main"
+        className="skip-link"
+        onClick={(e) => {
+          e.preventDefault()
+          document.getElementById('main')?.focus()
+        }}
+      >
+        Skip to main content
+      </a>
+
       <nav className="nav" aria-label="Main">
         <NavLink to="/" end className="brand">
           <Mark />
@@ -39,8 +68,13 @@ export default function App() {
         <div className="links">
           {user ? (
             <>
-              <NavLink to="/dashboard">Dashboard</NavLink>
-              <NavLink to="/surveys/new">New survey</NavLink>
+              {CREATOR_ROLES.includes(user.role) && (
+                <>
+                  <NavLink to="/dashboard">Dashboard</NavLink>
+                  <NavLink to="/surveys/new">New survey</NavLink>
+                </>
+              )}
+
               <span className="who">{user.email}</span>
 
               <button
@@ -60,11 +94,15 @@ export default function App() {
         </div>
       </nav>
 
-      <main className="container">
+      <main id="main" tabIndex={-1} className="container">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+
+          {/* SMS-25: Password reset */}
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           <Route
             path="/dashboard"
@@ -95,7 +133,7 @@ export default function App() {
             }
           />
 
-          {/* SMS-17: Preview how respondents see a survey */}
+          {/* SMS-17: Preview survey */}
           <Route
             path="/surveys/:id/preview"
             element={
@@ -105,7 +143,17 @@ export default function App() {
             }
           />
 
-          {/* SMS-18: Public respondent page for published surveys */}
+          {/* SMS-30: Results and charts */}
+          <Route
+            path="/surveys/:id/results"
+            element={
+              <ProtectedRoute>
+                <ResultsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* SMS-24: Public shareable survey link */}
           <Route path="/s/:slug" element={<SurveyRespond />} />
         </Routes>
       </main>

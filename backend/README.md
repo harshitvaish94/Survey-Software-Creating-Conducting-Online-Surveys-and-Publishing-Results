@@ -112,3 +112,62 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+## Database migrations (SMS-13)
+
+The schema is owned by TypeORM migrations in `src/database/migrations`; `synchronize` is off.
+
+```bash
+docker compose up -d db          # Postgres 16 from the repo root
+npm run migration:run            # create / update all tables
+npm run migration:show           # list applied ([X]) and pending ([ ]) migrations
+npm run migration:revert         # undo the most recent migration
+npm run migration:generate -- src/database/migrations/AddSomething   # after changing an entity
+```
+
+The app also applies pending migrations on start-up; set `DB_MIGRATIONS_RUN=false` to turn that off.
+
+Tables: `users`, `reset_tokens`, `surveys`, `questions`, `responses`, `answers`, `submission_guard`.
+
+## Authentication (SMS-14)
+
+| Endpoint | What it does |
+|---|---|
+| `POST /auth/register` | `{ email, password, role? }` creates an account. Passwords are hashed with Argon2id. `role` may be `Creator` (default) or `Respondent`. 409 if the email is taken. |
+| `POST /auth/login` | `{ email, password }` sets the `sms_session` cookie (JWT, HttpOnly, SameSite=Lax, Secure in production, 8 h). 401 on bad credentials. |
+| `POST /auth/logout` | Clears the cookie. |
+| `GET /auth/me` | The logged-in user, or 401. |
+
+Set `JWT_SECRET` (required when `NODE_ENV=production`) and `FRONTEND_ORIGIN` for CORS.
+
+## Roles and ownership (SMS-15)
+
+Every route needs a session unless it is marked `@Public()`. `@Roles(...)` limits a route to roles; anything else gets **403**.
+
+| Route | Who |
+|---|---|
+| `POST/GET /surveys`, `PUT /surveys/:id`, publish, reorder, delete question | Creator (own surveys only) or Administrator |
+| `GET /surveys/:id` | Anyone if Published; otherwise owner or Administrator |
+| `POST /surveys/:id/responses` | Anyone (the respondent is recorded when logged in) |
+| `/auth/register`, `/auth/login`, `/auth/logout`, `/health` | Public |
+
+A creator who touches another creator's survey gets 403 "You can only manage your own surveys."
+
+## Results (SMS-29)
+
+`GET /surveys/:id/results` returns consolidated results per question, computed in Postgres.
+Owner or Administrator only (others get 403).
+
+| Question type | Returned |
+|---|---|
+| single / dropdown / multiple | `counts`: every option in order with `count` and `percent` (share of selections) |
+| rating | `average` (2 decimals) and `totalRatings` |
+| text | `textAnswers` (blank answers dropped) |
+
+Every question also has `answered` (responses that answered it); the survey has `totalResponses`.
+
+TC-Res-01 checks the SQL against a hand-calculated data set on a real database:
+
+```bash
+RESULTS_DB_TEST=1 npx vitest run src/results/results.sql.spec.ts
+```

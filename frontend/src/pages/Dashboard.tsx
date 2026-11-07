@@ -67,19 +67,31 @@ export default function Dashboard() {
       {state.status === 'ready' && state.surveys.length > 0 && (
         <div className="survey-list">
           {state.surveys.map((survey) => (
-            <Link
-              key={survey.id}
-              to={`/surveys/${survey.id}/edit`}
-              className="survey-card"
-            >
+            <div key={survey.id} className="survey-card">
               <span className="chip">{survey.status}</span>
               <h2>{survey.title}</h2>
               <p>
                 {survey.questions.length}{' '}
                 {survey.questions.length === 1 ? 'question' : 'questions'}
               </p>
-              <span className="edit-hint">Edit survey</span>
-            </Link>
+              <div className="card-actions">
+                <Link to={`/surveys/${survey.id}/edit`} className="edit-hint">
+                  Edit survey
+                </Link>
+                {/* SMS-26: share / open the public respondent page once published */}
+                {survey.status === 'Published' && (
+                  <Link to={`/s/${survey.id}`} className="edit-hint">
+                    Take survey
+                  </Link>
+                )}
+                {/* SMS-30: results are available once a survey has left Draft */}
+                {survey.status !== 'Draft' && (
+                  <Link to={`/surveys/${survey.id}/results`} className="edit-hint">
+                    View results
+                  </Link>
+                )}
+              </div>
+            </div>
           ))}
         </div>
       )}

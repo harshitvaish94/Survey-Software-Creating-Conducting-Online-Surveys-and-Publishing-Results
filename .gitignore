@@ -1,3 +1,6 @@
 node_modules
 dist
 .env
+
+nginx/certs/*.key
+nginx/certs/*.crt
