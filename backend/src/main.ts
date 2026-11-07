@@ -1,28 +1,13 @@
-import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
+import { configureApp } from './app.setup';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Parse the HTTP-only session cookie (SMS-14)
-  app.use(cookieParser());
-
-  // Enable CORS for frontend; credentials so the browser sends the session cookie
-  app.enableCors({
-    origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173',
-    credentials: true,
-  });
-
-  // Enable validation
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-    }),
-  );
+  // Security headers, cookies, CORS, input cleaning and validation (see app.setup.ts)
+  configureApp(app);
 
   // Swagger API documentation
   const config = new DocumentBuilder()

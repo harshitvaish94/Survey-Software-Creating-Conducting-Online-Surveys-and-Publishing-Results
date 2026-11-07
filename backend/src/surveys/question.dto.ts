@@ -29,6 +29,7 @@ export class QuestionInputDto {
   @IsArray()
   @ArrayMaxSize(50)
   @IsString({ each: true })
+  @MaxLength(200, { each: true })
   options?: string[];
 
   @IsOptional()

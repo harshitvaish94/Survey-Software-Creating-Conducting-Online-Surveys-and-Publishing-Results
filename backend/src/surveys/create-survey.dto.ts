@@ -20,6 +20,7 @@ export class CreateSurveyDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   description?: string;
 
   @IsOptional()
