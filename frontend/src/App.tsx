@@ -12,6 +12,8 @@ import SurveyPreview from './pages/SurveyPreview'
 import SurveyRespond from './pages/SurveyRespond'
 import ResultsPage from './pages/ResultsPage'
 import { pageTitle } from './lib/pageTitle'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 
 function Mark() {
   return (
@@ -89,7 +91,8 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route
             path="/dashboard"
             element={
