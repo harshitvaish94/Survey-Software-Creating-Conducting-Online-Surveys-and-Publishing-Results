@@ -4,6 +4,7 @@ import {
   IsArray,
   IsDateString,
   IsNotEmpty,
+  IsBoolean,
   IsOptional,
   IsString,
   MaxLength,
@@ -28,6 +29,11 @@ export class CreateSurveyDto {
   @IsOptional()
   @IsDateString()
   closeDate?: string;
+
+  /** SMS-27: allow the same person to answer more than once (default false). */
+  @IsOptional()
+  @IsBoolean()
+  allowMultipleResponses?: boolean;
 
   @IsOptional()
   @IsArray()
