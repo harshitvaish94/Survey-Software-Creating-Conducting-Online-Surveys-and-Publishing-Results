@@ -38,7 +38,7 @@ export class RegisterDto {
 
   @ApiPropertyOptional({ enum: SELF_SERVICE_ROLES, default: UserRole.CREATOR })
   @IsOptional()
-  @IsIn(SELF_SERVICE_ROLES)
+  @IsIn(SELF_SERVICE_ROLES, { message: 'Role must be Creator or Respondent.' })
   role?: UserRole;
 }
 
