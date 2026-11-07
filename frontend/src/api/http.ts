@@ -16,6 +16,8 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
   let response: Response
   try {
     response = await fetch(`${API_BASE}${path}`, {
+      // Send the HTTP-only session cookie with every API call (SMS-14).
+      credentials: 'include',
       ...init,
       headers: { 'Content-Type': 'application/json', ...init.headers },
     })

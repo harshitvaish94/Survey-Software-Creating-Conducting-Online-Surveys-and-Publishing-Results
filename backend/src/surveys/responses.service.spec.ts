@@ -15,7 +15,7 @@ describe('ResponsesService', () => {
   beforeEach(async () => {
     db = new FakeDb();
     surveys = new SurveysService(db.surveys as any, db.dataSource as any);
-    responses = new ResponsesService(db.surveys as any, db.responses as any);
+    responses = new ResponsesService(db.surveys as any, db.dataSource as any);
     const s = await surveys.create({
       title: 'S',
       questions: [
@@ -46,6 +46,7 @@ describe('ResponsesService', () => {
         responses.submit(surveyId, { answers: { [ids[0]]: 'A' } }),
       ).rejects.toThrow(BadRequestException);
       expect(db.responses.rows).toHaveLength(0);
+      expect(db.answers.rows).toHaveLength(0);
     });
 
     it('lists every missing mandatory answer in the error', async () => {
@@ -59,17 +60,19 @@ describe('ResponsesService', () => {
         answers: { [ids[0]]: 'B', [ids[2]]: 4 },
       });
       expect(result.id).toBeDefined();
-      expect(db.responses.rows[0]).toMatchObject({
-        surveyId,
-        answers: { [ids[0]]: 'B', [ids[2]]: 4 },
-      });
+      expect(db.responses.rows[0]).toMatchObject({ surveyId, respondentId: null });
+      const responseId = db.responses.rows[0].id;
+      expect(db.answers.rows).toEqual([
+        { id: expect.any(Number), responseId, questionId: ids[0], value: 'B' },
+        { id: expect.any(Number), responseId, questionId: ids[2], value: 4 },
+      ]);
     });
 
     it('stores the optional answer when it is given (trimmed)', async () => {
       await responses.submit(surveyId, {
         answers: { [ids[0]]: 'A', [ids[1]]: ' nice ', [ids[2]]: 5 },
       });
-      expect(db.responses.rows[0].answers[ids[1]]).toBe('nice');
+      expect(db.answers.rows.find((a) => a.questionId === ids[1])?.value).toBe('nice');
     });
 
     it('rejects an invalid rating', async () => {

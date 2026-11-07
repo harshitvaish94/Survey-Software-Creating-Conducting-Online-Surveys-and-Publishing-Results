@@ -1,6 +1,6 @@
 import { request } from './http'
 import { toQuestionPayload } from '../lib/questions'
-import type { EditorQuestion, QuestionPayload, ServerQuestion } from '../lib/questions'
+import type { EditorQuestion, QuestionPayload, QuestionType, ServerQuestion } from '../lib/questions'
 
 export type SurveyStatus = 'Draft' | 'Published' | 'Closed'
 
@@ -11,6 +11,8 @@ export interface Survey {
   openDate: string | null
   closeDate: string | null
   status: SurveyStatus
+  /** User id of the creator who owns the survey (SMS-15). */
+  ownerId: number | null
   createdAt: string
   updatedAt: string
   questions: ServerQuestion[]
@@ -66,3 +68,30 @@ export const reorderQuestions = (surveyId: number, questionIds: number[]) =>
 
 export const updateSurvey = (id: number, input: SurveyInput) =>
   request<Survey>(`/surveys/${id}`, { method: 'PUT', body: JSON.stringify(toPayload(input)) })
+
+// ---- SMS-30: consolidated results (GET /surveys/:id/results, owner only) ----
+export interface ChoiceCount {
+  label: string
+  count: number
+  percent?: number
+}
+
+export interface QuestionResult {
+  id: number
+  type: QuestionType
+  text?: string
+  prompt?: string
+  counts?: ChoiceCount[]
+  average?: number
+  totalRatings?: number
+  textAnswers?: string[]
+}
+
+export interface SurveyResults {
+  surveyId: number | string
+  title: string
+  totalResponses: number
+  questions: QuestionResult[]
+}
+
+export const getResults = (id: number) => request<SurveyResults>(`/surveys/${id}/results`)

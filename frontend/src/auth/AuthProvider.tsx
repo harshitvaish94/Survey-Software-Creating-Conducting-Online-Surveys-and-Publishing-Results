@@ -1,39 +1,40 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
+import { logout, me } from '../api/auth'
 import type { AuthUser } from '../api/auth'
 import { AuthContext } from './context'
 
-const KEY = 'sms_user'
-
-function load(): AuthUser | null {
-  try {
-    const raw = sessionStorage.getItem(KEY)
-    return raw ? (JSON.parse(raw) as AuthUser) : null
-  } catch {
-    return null
-  }
-}
-
+/**
+ * The session itself lives in an HTTP-only cookie set by the API. On load we ask
+ * the API who is logged in (`/auth/me`) so a refresh or new tab keeps the session.
+ */
 export default function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(load)
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [checking, setChecking] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    me()
+      .then((u) => !cancelled && setUser(u))
+      .catch(() => !cancelled && setUser(null))
+      .finally(() => !cancelled && setChecking(false))
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   function signIn(u: AuthUser) {
     setUser(u)
-    try {
-      sessionStorage.setItem(KEY, JSON.stringify(u))
-    } catch {
-      /* ignore */
-    }
   }
 
   function signOut() {
     setUser(null)
-    try {
-      sessionStorage.removeItem(KEY)
-    } catch {
-      /* ignore */
-    }
+    logout().catch(() => {
+      /* the cookie expires on its own; nothing else to do */
+    })
   }
 
-  return <AuthContext.Provider value={{ user, signIn, signOut }}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={{ user, checking, signIn, signOut }}>{children}</AuthContext.Provider>
+  )
 }

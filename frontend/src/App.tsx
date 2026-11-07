@@ -1,14 +1,17 @@
-import { Routes, Route, NavLink, useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import CreateSurvey from './pages/CreateSurvey'
 import ProtectedRoute from './auth/ProtectedRoute'
-import { useAuth } from './auth/context'
+import { CREATOR_ROLES, useAuth } from './auth/context'
 import SurveyCreate from './pages/SurveyCreate'
 import SurveyPreview from './pages/SurveyPreview'
 import SurveyRespond from './pages/SurveyRespond'
+import ResultsPage from './pages/ResultsPage'
+import { pageTitle } from './lib/pageTitle'
 
 function Mark() {
   return (
@@ -22,6 +25,12 @@ function Mark() {
 export default function App() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
+
+  // SMS-37: give every page its own title (WCAG 2.4.2)
+  useEffect(() => {
+    document.title = pageTitle(pathname)
+  }, [pathname])
 
   function onLogout() {
     signOut()
@@ -30,6 +39,17 @@ export default function App() {
 
   return (
     <>
+      {/* SMS-37: skip link for keyboard users (WCAG 2.4.1) */}
+      <a
+        href="#main"
+        className="skip-link"
+        onClick={(e) => {
+          e.preventDefault()
+          document.getElementById('main')?.focus()
+        }}
+      >
+        Skip to main content
+      </a>
       <nav className="nav" aria-label="Main">
         <NavLink to="/" end className="brand">
           <Mark />
@@ -39,8 +59,12 @@ export default function App() {
         <div className="links">
           {user ? (
             <>
-              <NavLink to="/dashboard">Dashboard</NavLink>
-              <NavLink to="/surveys/new">New survey</NavLink>
+              {CREATOR_ROLES.includes(user.role) && (
+                <>
+                  <NavLink to="/dashboard">Dashboard</NavLink>
+                  <NavLink to="/surveys/new">New survey</NavLink>
+                </>
+              )}
               <span className="who">{user.email}</span>
 
               <button
@@ -60,7 +84,7 @@ export default function App() {
         </div>
       </nav>
 
-      <main className="container">
+      <main id="main" tabIndex={-1} className="container">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
@@ -106,6 +130,16 @@ export default function App() {
           />
 
           {/* SMS-18: Public respondent page for published surveys */}
+          {/* SMS-30: results and charts for the survey owner */}
+          <Route
+            path="/surveys/:id/results"
+            element={
+              <ProtectedRoute>
+                <ResultsPage />
+              </ProtectedRoute>
+            }
+          />
+
           <Route path="/s/:id" element={<SurveyRespond />} />
         </Routes>
       </main>

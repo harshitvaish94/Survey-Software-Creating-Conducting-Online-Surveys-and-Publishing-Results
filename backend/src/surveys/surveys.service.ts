@@ -10,6 +10,9 @@ import { CreateSurveyDto } from './create-survey.dto';
 import { QuestionInputDto } from './question.dto';
 import { Question } from './question.entity';
 import { NormalizedQuestion, normalizeQuestion } from './question-validation';
+import type { AuthUser } from '../auth/auth.constants';
+import { assertCanManage } from '../auth/ownership';
+import { UserRole } from '../users/user.entity';
 import { Survey, SurveyStatus } from './survey.entity';
 import {
   isExpired,
@@ -31,7 +34,11 @@ export class SurveysService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async create(dto: CreateSurveyDto): Promise<Survey> {
+  /** `ownerId` is the creator's user id (SMS-15); the controller always passes it. */
+  async create(
+    dto: CreateSurveyDto,
+    ownerId: number | null = null,
+  ): Promise<Survey> {
     this.assertDates(dto);
     const questions = this.prepareQuestions(dto.questions);
 
@@ -44,6 +51,7 @@ export class SurveysService {
           openDate: dto.openDate || null,
           closeDate: dto.closeDate || null,
           status: SurveyStatus.DRAFT,
+          ownerId,
         }),
       );
       await this.syncQuestions(manager, saved.id, questions);
@@ -55,6 +63,14 @@ export class SurveysService {
 
   async findAll(): Promise<Survey[]> {
     const surveys = await this.surveyRepository.find({
+  /** Surveys the user may manage: administrators see all, creators only their own. */
+  findAllFor(user: AuthUser): Promise<Survey[]> {
+    return this.findAll(user.role === UserRole.ADMIN ? undefined : user.id);
+  }
+
+  findAll(ownerId?: number): Promise<Survey[]> {
+    return this.surveyRepository.find({
+      where: ownerId === undefined ? undefined : { ownerId },
       relations: { questions: true },
       order: { createdAt: 'DESC', questions: { position: 'ASC' } },
     });

@@ -1,20 +1,25 @@
 import {
-  Column,
   CreateDateColumn,
+  Column,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import type { Relation } from 'typeorm';
-import type { AnswerValue } from './answer-validation';
+import { User } from '../users/user.entity';
+import { Answer } from './answer.entity';
 import { Survey } from './survey.entity';
 
-@Entity('survey_responses')
+/** One submission of a survey. The individual answers live in the `answers` table. */
+@Entity('responses')
 export class SurveyResponse {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Index()
   @Column({ type: 'int' })
   surveyId: number;
 
@@ -22,10 +27,17 @@ export class SurveyResponse {
   @JoinColumn({ name: 'surveyId' })
   survey: Relation<Survey>;
 
-  /** Answers keyed by question id. Unanswered optional questions are omitted. */
-  @Column({ type: 'jsonb' })
-  answers: Record<string, AnswerValue>;
+  /** Logged-in respondent, or null for anonymous responses. */
+  @Column({ type: 'int', nullable: true })
+  respondentId: number | null;
 
-  @CreateDateColumn()
+  @ManyToOne(() => User, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'respondentId' })
+  respondent: Relation<User> | null;
+
+  @OneToMany(() => Answer, (answer) => answer.response)
+  answers: Relation<Answer[]>;
+
+  @CreateDateColumn({ type: 'timestamptz' })
   submittedAt: Date;
 }
