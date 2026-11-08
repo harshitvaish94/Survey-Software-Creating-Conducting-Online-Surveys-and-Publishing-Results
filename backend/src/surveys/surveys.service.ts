@@ -65,8 +65,6 @@ export class SurveysService {
     return this.findOne(surveyId);
   }
 
-    /** Surveys the user may manage: administrators see all, creators only their own. */
-  /** Surveys the user may manage: administrators see all, creators only their own. */
   findAllFor(user: AuthUser): Promise<Survey[]> {
     return this.findAll(user.role === UserRole.ADMIN ? undefined : user.id);
   }
@@ -87,37 +85,14 @@ export class SurveysService {
     return surveys;
   }
 
-  /** Public lookup for the shareable link. Drafts have no slug, so they never match. */
-  async findBySlug(slug: string): Promise<Survey> {
+  async assertOwner(surveyId: number, user?: AuthUser): Promise<void> {
     const survey = await this.surveyRepository.findOne({
-      where: { slug },
-      relations: { questions: true },
-      order: { questions: { position: 'ASC' } },
+      where: { id: surveyId },
     });
-    if (!survey || survey.status === SurveyStatus.DRAFT) {
-      throw new NotFoundException('Survey not found.');
+    if (!survey) {
+      throw new NotFoundException(`Survey ${surveyId} not found.`);
     }
-    await this.closeIfExpired(survey);
-    return survey;
-  }
-
-  /** Link and QR code of a published (or later closed) survey. */
-  async getShare(id: number): Promise<ShareInfo> {
-    const survey = await this.findOne(id);
-    if (survey.status === SurveyStatus.DRAFT) {
-      throw new ConflictException('Publish the survey to get its link.');
-    }
-    let slug = survey.slug;
-    if (!slug) {
-      // Surveys published before slugs existed get one the first time they are shared.
-      slug = await this.uniqueSlug();
-      const row = await this.surveyRepository.findOne({ where: { id } });
-      if (row) {
-        row.slug = slug;
-        await this.surveyRepository.save(row);
-      }
-    }
-    return buildShareInfo(slug);
+    assertCanManage(survey.ownerId, user);
   }
 
   async findOne(id: number): Promise<Survey> {
