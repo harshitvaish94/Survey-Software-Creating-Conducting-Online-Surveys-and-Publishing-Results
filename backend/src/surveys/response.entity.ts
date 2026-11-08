@@ -9,11 +9,10 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import type { Relation } from 'typeorm';
-import { User } from '../users/user.entity';
 import { Answer } from './answer.entity';
 import { Survey } from './survey.entity';
 
-/** One submission of a survey. The individual answers live in the `answers` table. */
+/** One anonymous submission of a survey. Individual answers live in the answers table. */
 @Entity('responses')
 export class SurveyResponse {
   @PrimaryGeneratedColumn()
@@ -26,14 +25,6 @@ export class SurveyResponse {
   @ManyToOne(() => Survey, { onDelete: 'CASCADE', nullable: false })
   @JoinColumn({ name: 'surveyId' })
   survey: Relation<Survey>;
-
-  /** Logged-in respondent, or null for anonymous responses. */
-  @Column({ type: 'int', nullable: true })
-  respondentId: number | null;
-
-  @ManyToOne(() => User, { onDelete: 'SET NULL', nullable: true })
-  @JoinColumn({ name: 'respondentId' })
-  respondent: Relation<User> | null;
 
   @OneToMany(() => Answer, (answer) => answer.response)
   answers: Relation<Answer[]>;

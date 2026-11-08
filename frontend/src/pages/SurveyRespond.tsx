@@ -107,6 +107,10 @@ export default function SurveyRespond() {
       <h1>{survey.title}</h1>
       {survey.description && <p className="lead">{survey.description}</p>}
       <p className="hint">Questions marked * are required.</p>
+      <p className="hint">
+        Responses are anonymous: your name and email are not collected or stored with your answers. Please avoid
+        putting personal details in free-text answers.
+      </p>
       <div className="q-list">
         {survey.questions.map((q) => (
           <QuestionInput

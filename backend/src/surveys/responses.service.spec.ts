@@ -60,7 +60,8 @@ describe('ResponsesService', () => {
         answers: { [ids[0]]: 'B', [ids[2]]: 4 },
       });
       expect(result.id).toBeDefined();
-      expect(db.responses.rows[0]).toMatchObject({ surveyId, respondentId: null });
+      expect(db.responses.rows[0]).toMatchObject({ surveyId });
+      expect('respondentId' in db.responses.rows[0]).toBe(false);
       const responseId = db.responses.rows[0].id;
       expect(db.answers.rows).toEqual([
         { id: expect.any(Number), responseId, questionId: ids[0], value: 'B' },
