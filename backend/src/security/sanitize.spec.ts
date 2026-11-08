@@ -68,3 +68,25 @@ describe('SanitizePipe', () => {
     expect(pipe.transform('7\u0000', { type: 'param' })).toBe('7\u0000');
   });
 });
+
+describe('allowedOrigins (CORS)', () => {
+  it('keeps the SMS-24 local origins and adds FRONTEND_ORIGIN, comma-separated, without duplicates', async () => {
+    const { allowedOrigins } = await import('../app.setup');
+    expect(allowedOrigins({})).toEqual([
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'http://10.249.140.189:5173',
+    ]);
+    expect(
+      allowedOrigins({
+        FRONTEND_ORIGIN: 'https://app.example.com, https://staging.example.com',
+      }),
+    ).toEqual([
+      'https://app.example.com',
+      'https://staging.example.com',
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'http://10.249.140.189:5173',
+    ]);
+  });
+});

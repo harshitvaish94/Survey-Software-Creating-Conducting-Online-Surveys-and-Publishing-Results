@@ -5,12 +5,12 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getResults, getSurvey } from '../api/surveys'
+import { getResults, getSurveyBySlug } from '../api/surveys'
 import type { Survey, SurveyResults } from '../api/surveys'
 import ResultsPage from './ResultsPage'
 import SurveyRespond from './SurveyRespond'
 
-vi.mock('../api/surveys', () => ({ getSurvey: vi.fn(), submitResponse: vi.fn(), getResults: vi.fn() }))
+vi.mock('../api/surveys', () => ({ getSurveyBySlug: vi.fn(), submitResponse: vi.fn(), getResults: vi.fn() }))
 // Charts draw on a canvas, which jsdom doesn't have; their labels come from the table anyway.
 vi.mock('react-chartjs-2', () => ({ Bar: () => null, Pie: () => null }))
 
@@ -45,8 +45,8 @@ describe('script payloads are shown as text (SMS-33)', () => {
         { id: 10, position: 0, text: XSS, type: 'single', options: [XSS, 'Safe'], ratingMin: null, ratingMax: null, mandatory: true },
       ],
     }
-    vi.mocked(getSurvey).mockResolvedValue(survey)
-    const { container } = renderAt('/s/1', '/s/:id', <SurveyRespond />)
+    vi.mocked(getSurveyBySlug).mockResolvedValue(survey)
+    const { container } = renderAt('/s/abc123', '/s/:slug', <SurveyRespond />)
 
     expect(await screen.findByRole('heading', { name: XSS })).toBeInTheDocument()
     expect(screen.getAllByLabelText(XSS).length).toBeGreaterThanOrEqual(1)

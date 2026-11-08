@@ -6,29 +6,8 @@ import { configureApp } from './app.setup';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Parse the HTTP-only session cookie (SMS-14)
-  app.use(cookieParser());
-
-  // Enable CORS for frontend access with credentials
-  const frontendOrigin = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
-
-  app.enableCors({
-    origin: [
-      frontendOrigin,
-      'http://localhost:5173',
-      'http://127.0.0.1:5173',
-      'http://10.249.140.189:5173',
-    ],
-    credentials: true,
-  });
-
-  // Enable validation
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-    }),
-  );
+  // Security headers, cookies, CORS, input cleaning and validation (see app.setup.ts)
+  configureApp(app);
 
   // Swagger API documentation
   const config = new DocumentBuilder()
