@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { login } from '../api/auth'
 import { useAuth } from '../auth/context'
 import AuthShell from '../components/AuthShell'
+import Captcha from '../components/Captcha'
+import type { CaptchaHandle } from '../components/Captcha'
+import { CAPTCHA_SITE_KEY } from '../lib/captcha'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -11,19 +14,28 @@ export default function Login() {
   const [show, setShow] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState('')
+  const captcha = useRef<CaptchaHandle>(null)
   const navigate = useNavigate()
   const { signIn } = useAuth()
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError('')
+    if (CAPTCHA_SITE_KEY && !captchaToken) {
+      setError('Please complete the CAPTCHA.')
+      return
+    }
     setLoading(true)
     try {
-      const user = await login(email, password)
+      const user = captchaToken
+        ? await login(email, password, captchaToken)
+        : await login(email, password)
       signIn(user)
       navigate('/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
+      captcha.current?.reset()
     } finally {
       setLoading(false)
     }
@@ -57,6 +69,7 @@ export default function Login() {
           <p className="switch">
             <Link to="/forgot-password">Forgot password?</Link>
           </p>
+          <Captcha ref={captcha} onToken={setCaptchaToken} />
           {error && <p className="error" role="alert">{error}</p>}
           <button type="submit" className="btn" disabled={loading}>
             {loading ? 'Logging in...' : 'Log in'}

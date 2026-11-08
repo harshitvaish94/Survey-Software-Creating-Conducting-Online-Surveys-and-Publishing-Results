@@ -2,6 +2,7 @@ import { ValidationPipe } from '@nestjs/common';
 import type { INestApplication } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import { applyRateLimits } from './security/rate-limit';
 import { SanitizePipe } from './security/sanitize';
 
 /** FRONTEND_ORIGIN (comma-separated for several) plus the local development origins. */
@@ -40,6 +41,9 @@ export function configureApp(app: INestApplication): INestApplication {
       crossOriginResourcePolicy: { policy: 'same-site' },
     }),
   );
+
+  // SMS-34: per-IP rate limits on login, register, password reset and submissions
+  applyRateLimits(app);
 
   // Parse the HTTP-only session cookie (SMS-14)
   app.use(cookieParser());

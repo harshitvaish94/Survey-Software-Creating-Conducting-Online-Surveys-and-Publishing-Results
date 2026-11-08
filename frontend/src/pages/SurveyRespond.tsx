@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useParams } from 'react-router-dom'
+import Captcha from '../components/Captcha'
+import type { CaptchaHandle } from '../components/Captcha'
+import { CAPTCHA_SITE_KEY } from '../lib/captcha'
 import QuestionInput from '../components/QuestionInput'
 import { getSurveyBySlug, submitResponse } from '../api/surveys'
 import type { Survey } from '../api/surveys'
@@ -15,6 +18,8 @@ type State =
 
 /** Public page where respondents answer a published survey. */
 export default function SurveyRespond() {
+  const [captchaToken, setCaptchaToken] = useState('')
+  const captcha = useRef<CaptchaHandle>(null)
   const { slug = '' } = useParams()
   const [state, setState] = useState<State>({ status: 'loading' })
   const [answers, setAnswers] = useState<AnswerMap>({})
@@ -78,12 +83,20 @@ export default function SurveyRespond() {
       setFormError('Please answer the required questions before submitting.')
       return
     }
+    if (CAPTCHA_SITE_KEY && !captchaToken) {
+      setFormError('Please complete the CAPTCHA.')
+      return
+    }
     setSubmitting(true)
     try {
-      await submitResponse(survey.id, buildAnswerPayload(survey.questions, answers))
+      const payload = buildAnswerPayload(survey.questions, answers)
+      await (captchaToken
+        ? submitResponse(survey.id, payload, captchaToken)
+        : submitResponse(survey.id, payload))
       setDone(true)
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Unable to submit your response.')
+      captcha.current?.reset()
     } finally {
       setSubmitting(false)
     }
@@ -105,6 +118,7 @@ export default function SurveyRespond() {
           />
         ))}
       </div>
+      <Captcha ref={captcha} onToken={setCaptchaToken} />
       {formError && <p className="error" role="alert">{formError}</p>}
       <button type="submit" className="btn" disabled={submitting}>
         {submitting ? 'Submitting...' : 'Submit response'}

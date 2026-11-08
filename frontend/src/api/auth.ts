@@ -14,8 +14,8 @@ const post = (body: unknown) => ({
 })
 
 /** Starts a session using an HTTP-only cookie. */
-export const login = (email: string, password: string) =>
-  request<AuthUser>('/auth/login', post({ email, password }))
+export const login = (email: string, password: string, captchaToken?: string) =>
+  request<AuthUser>('/auth/login', post({ email, password, ...(captchaToken ? { captchaToken } : {}) }))
 
 /** Creates a new account. */
 export const register = (email: string, password: string) =>
