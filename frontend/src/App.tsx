@@ -1,5 +1,11 @@
 import { useEffect } from 'react'
-import { Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import {
+  Routes,
+  Route,
+  NavLink,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -29,7 +35,7 @@ export default function App() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
 
-  // SMS-37: give every page its own title (WCAG 2.4.2)
+  // SMS-37: Set an appropriate title for each page.
   useEffect(() => {
     document.title = pageTitle(pathname)
   }, [pathname])
@@ -41,7 +47,7 @@ export default function App() {
 
   return (
     <>
-      {/* SMS-37: skip link for keyboard users (WCAG 2.4.1) */}
+      {/* SMS-37: Accessibility skip link */}
       <a
         href="#main"
         className="skip-link"
@@ -52,6 +58,7 @@ export default function App() {
       >
         Skip to main content
       </a>
+
       <nav className="nav" aria-label="Main">
         <NavLink to="/" end className="brand">
           <Mark />
@@ -67,6 +74,7 @@ export default function App() {
                   <NavLink to="/surveys/new">New survey</NavLink>
                 </>
               )}
+
               <span className="who">{user.email}</span>
 
               <button
@@ -91,8 +99,11 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+
+          {/* SMS-25: Password reset */}
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+
           <Route
             path="/dashboard"
             element={
@@ -122,7 +133,7 @@ export default function App() {
             }
           />
 
-          {/* SMS-17: Preview how respondents see a survey */}
+          {/* SMS-17: Preview survey */}
           <Route
             path="/surveys/:id/preview"
             element={
@@ -132,8 +143,7 @@ export default function App() {
             }
           />
 
-          {/* SMS-18: Public respondent page for published surveys */}
-          {/* SMS-30: results and charts for the survey owner */}
+          {/* SMS-30: Results and charts */}
           <Route
             path="/surveys/:id/results"
             element={
@@ -143,7 +153,8 @@ export default function App() {
             }
           />
 
-          <Route path="/s/:id" element={<SurveyRespond />} />
+          {/* SMS-24: Public shareable survey link */}
+          <Route path="/s/:slug" element={<SurveyRespond />} />
         </Routes>
       </main>
     </>

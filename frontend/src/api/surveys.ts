@@ -1,6 +1,11 @@
 import { request } from './http'
 import { toQuestionPayload } from '../lib/questions'
-import type { EditorQuestion, QuestionPayload, QuestionType, ServerQuestion } from '../lib/questions'
+import type {
+  EditorQuestion,
+  QuestionPayload,
+  QuestionType,
+  ServerQuestion,
+} from '../lib/questions'
 
 export type SurveyStatus = 'Draft' | 'Published' | 'Closed'
 
@@ -11,12 +16,20 @@ export interface Survey {
   openDate: string | null
   closeDate: string | null
   status: SurveyStatus
-  /** User id of the creator who owns the survey (SMS-15). */
   ownerId: number | null
+  slug?: string | null
   createdAt: string
   updatedAt: string
   questions: ServerQuestion[]
 }
+
+export interface ShareInfo {
+  slug: string
+  link: string
+  qrCodeUrl: string
+}
+
+export type PublishedSurvey = Survey & ShareInfo
 
 export interface SurveyInput {
   title: string
@@ -46,19 +59,34 @@ function toPayload(input: SurveyInput): SurveyPayload {
 
 export const listSurveys = () => request<Survey[]>('/surveys')
 
-export const getSurvey = (id: number) => request<Survey>(`/surveys/${id}`)
+export const getSurvey = (id: number) =>
+  request<Survey>(`/surveys/${id}`)
 
 export const publishSurvey = (id: number) =>
-  request<Survey>(`/surveys/${id}/publish`, { method: 'POST' })
+  request<PublishedSurvey>(`/surveys/${id}/publish`, { method: 'POST' })
+
+export const getShareInfo = (id: number) =>
+  request<ShareInfo>(`/surveys/${id}/share`)
+
+export const getSurveyBySlug = (slug: string) =>
+  request<Survey>(`/surveys/public/${encodeURIComponent(slug)}`)
 
 export const closeSurvey = (id: number) =>
   request<Survey>(`/surveys/${id}/close`, { method: 'POST' })
 
-export const submitResponse = (id: number, answers: Record<string, unknown>) =>
-  request<{ id: number }>(`/surveys/${id}/responses`, { method: 'POST', body: JSON.stringify({ answers }) })
+export const submitResponse = (
+  id: number,
+  answers: Record<string, unknown>,
+) =>
+  request<{ id: number }>(`/surveys/${id}/responses`, {
+    method: 'POST',
+    body: JSON.stringify({ answers }),
+  })
 
 export const deleteQuestion = (surveyId: number, questionId: number) =>
-  request<void>(`/surveys/${surveyId}/questions/${questionId}`, { method: 'DELETE' })
+  request<void>(`/surveys/${surveyId}/questions/${questionId}`, {
+    method: 'DELETE',
+  })
 
 export const reorderQuestions = (surveyId: number, questionIds: number[]) =>
   request<unknown>(`/surveys/${surveyId}/questions/order`, {
@@ -67,9 +95,12 @@ export const reorderQuestions = (surveyId: number, questionIds: number[]) =>
   })
 
 export const updateSurvey = (id: number, input: SurveyInput) =>
-  request<Survey>(`/surveys/${id}`, { method: 'PUT', body: JSON.stringify(toPayload(input)) })
+  request<Survey>(`/surveys/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(toPayload(input)),
+  })
 
-// ---- SMS-30: consolidated results (GET /surveys/:id/results, owner only) ----
+// SMS-30: Consolidated survey results
 export interface ChoiceCount {
   label: string
   count: number
@@ -94,4 +125,5 @@ export interface SurveyResults {
   questions: QuestionResult[]
 }
 
-export const getResults = (id: number) => request<SurveyResults>(`/surveys/${id}/results`)
+export const getResults = (id: number) =>
+  request<SurveyResults>(`/surveys/${id}/results`)
