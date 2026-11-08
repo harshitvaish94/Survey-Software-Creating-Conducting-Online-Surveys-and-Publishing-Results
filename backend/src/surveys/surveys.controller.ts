@@ -21,10 +21,6 @@ import { ReorderQuestionsDto } from './reorder-questions.dto';
 import { SurveysService } from './surveys.service';
 import { UpdateSurveyDto } from './update-survey.dto';
 
-/**
- * Survey management is for Creators and Administrators (SMS-15). Respondents get 403;
- * creators get 403 on surveys they do not own.
- */
 @ApiTags('surveys')
 @ApiCookieAuth()
 @Roles(UserRole.CREATOR, UserRole.ADMIN)
@@ -42,8 +38,22 @@ export class SurveysController {
     return this.surveysService.findAllFor(user);
   }
 
+  /** Public: resolve a shareable link. */
+  @Public()
+  @Get('public/:slug')
+  findBySlug(@Param('slug') slug: string) {
+    return this.surveysService.findBySlug(slug);
+  }
+
+  /** Retrieve the shareable link and QR code for an owned survey. */
+  @Get(':id/share')
+  async share(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: AuthUser) {
+    await this.surveysService.assertOwner(id, user);
+    return this.surveysService.getShare(id);
+  }
+
   /**
-   * Public so respondents can open a published survey without an account.
+   * Public so respondents can open published surveys without an account.
    * Drafts and closed surveys are only visible to their owner or an administrator.
    */
   @Public()
@@ -53,12 +63,14 @@ export class SurveysController {
     @CurrentUser() user?: AuthUser,
   ) {
     const survey = await this.surveysService.findOne(id);
+
     if (
       survey.status === SurveyStatus.PUBLISHED ||
       canManage(survey.ownerId ?? null, user)
     ) {
       return survey;
     }
+
     await this.surveysService.assertOwner(id, user);
     return survey;
   }
@@ -75,7 +87,11 @@ export class SurveysController {
 
   @Post(':id/close')
   @HttpCode(200)
-  close(@Param('id', ParseIntPipe) id: number) {
+  async close(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthUser,
+  ) {
+    await this.surveysService.assertOwner(id, user);
     return this.surveysService.close(id);
   }
 

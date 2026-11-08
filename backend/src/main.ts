@@ -1,8 +1,7 @@
-import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
+import { configureApp } from './app.setup';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -10,9 +9,16 @@ async function bootstrap() {
   // Parse the HTTP-only session cookie (SMS-14)
   app.use(cookieParser());
 
-  // Enable CORS for frontend; credentials so the browser sends the session cookie
+  // Enable CORS for frontend access with credentials
+  const frontendOrigin = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
+
   app.enableCors({
-    origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173',
+    origin: [
+      frontendOrigin,
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'http://10.249.140.189:5173',
+    ],
     credentials: true,
   });
 
@@ -35,7 +41,8 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  await app.listen(process.env.PORT ?? 3000);
+  // Listen on all network interfaces
+  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }
 
 bootstrap();

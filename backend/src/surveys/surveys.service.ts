@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -20,6 +21,8 @@ import {
   todayInSurveyTimezone,
 } from './survey-lifecycle';
 import { UpdateSurveyDto } from './update-survey.dto';
+import { buildShareInfo, generateSlug } from './sharing';
+import type { ShareInfo } from './sharing';
 
 interface PendingQuestion {
   id?: number;
@@ -72,10 +75,13 @@ export class SurveysService {
       relations: { questions: true },
       order: { createdAt: 'DESC', questions: { position: 'ASC' } },
     });
+
     const today = todayInSurveyTimezone();
+
     for (const survey of surveys) {
       await this.closeIfExpired(survey, today);
     }
+
     return surveys;
   }
 
@@ -100,6 +106,20 @@ export class SurveysService {
     }
     await this.closeIfExpired(survey);
     return survey;
+  }
+
+  /** Verifies that the user owns the survey or is an administrator. */
+  async assertOwner(id: number, user: AuthUser | undefined): Promise<void> {
+    const survey = await this.surveyRepository.findOne({
+      where: { id },
+      select: { id: true, ownerId: true },
+    });
+
+    if (!survey) {
+      throw new NotFoundException(`Survey ${id} not found.`);
+    }
+
+    assertCanManage(survey.ownerId, user);
   }
 
   async update(id: number, dto: UpdateSurveyDto): Promise<Survey> {
@@ -191,7 +211,7 @@ export class SurveysService {
   }
 
   /** Moves a draft survey to Published. It needs at least one question. */
-  async publish(id: number): Promise<Survey> {
+  async publish(id: number): Promise<Survey & ShareInfo> {
     const survey = await this.findOne(id);
     if (survey.status !== SurveyStatus.DRAFT) {
       throw new ConflictException('This survey has already been published.');
@@ -209,9 +229,22 @@ export class SurveysService {
     const row = await this.surveyRepository.findOne({ where: { id } });
     if (row) {
       row.status = SurveyStatus.PUBLISHED;
+      row.slug = await this.uniqueSlug();
       await this.surveyRepository.save(row);
     }
-    return this.findOne(id);
+    const published = await this.findOne(id);
+    return { ...published, ...(await buildShareInfo(published.slug as string)) };
+  }
+
+  /** Random slug that no other survey uses (the unique index is the backstop). */
+  private async uniqueSlug(): Promise<string> {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const slug = generateSlug();
+      if (!(await this.surveyRepository.findOne({ where: { slug } }))) {
+        return slug;
+      }
+    }
+    throw new InternalServerErrorException('Could not create a unique link.');
   }
 
   /** Moves a published survey to Closed. Closed surveys keep their results. */
