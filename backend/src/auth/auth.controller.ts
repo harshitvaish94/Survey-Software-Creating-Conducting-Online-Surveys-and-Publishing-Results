@@ -1,4 +1,12 @@
-import { Body, Controller, Get, HttpCode, Post, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Post,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { SESSION_COOKIE, sessionCookieOptions } from './auth.constants';
@@ -12,6 +20,7 @@ import {
 import { AuthService } from './auth.service';
 import { CurrentUser } from './current-user.decorator';
 import { Public } from './access.decorators';
+import { CaptchaGuard } from '../security/captcha';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -25,6 +34,8 @@ export class AuthController {
   }
 
   @Public()
+  // SMS-34: CAPTCHA when HCAPTCHA_SECRET is set
+  @UseGuards(CaptchaGuard)
   @Post('login')
   @HttpCode(200)
   async login(

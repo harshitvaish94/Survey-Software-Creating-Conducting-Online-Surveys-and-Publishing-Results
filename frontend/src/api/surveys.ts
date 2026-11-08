@@ -77,10 +77,11 @@ export const closeSurvey = (id: number) =>
 export const submitResponse = (
   id: number,
   answers: Record<string, unknown>,
+  captchaToken?: string,
 ) =>
   request<{ id: number }>(`/surveys/${id}/responses`, {
     method: 'POST',
-    body: JSON.stringify({ answers }),
+    body: JSON.stringify({ answers, ...(captchaToken ? { captchaToken } : {}) }),
   })
 
 export const deleteQuestion = (surveyId: number, questionId: number) =>

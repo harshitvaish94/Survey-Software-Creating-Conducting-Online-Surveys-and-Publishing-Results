@@ -7,6 +7,7 @@ import {
   Post,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import type { Request, Response } from 'express';
@@ -14,6 +15,7 @@ import { sessionCookieOptions } from '../auth/auth.constants';
 import { Public } from '../auth/access.decorators';
 import type { AuthUser } from '../auth/auth.constants';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { CaptchaGuard } from '../security/captcha';
 import { ResponsesService } from './responses.service';
 import { SubmitResponseDto } from './submit-response.dto';
 
@@ -44,6 +46,8 @@ export class ResponsesController {
 
   @Post()
   @HttpCode(201)
+  // SMS-34: CAPTCHA when HCAPTCHA_SECRET is set
+  @UseGuards(CaptchaGuard)
   submit(
     @Param('surveyId', ParseIntPipe) surveyId: number,
     @Body() dto: SubmitResponseDto,

@@ -9,7 +9,10 @@ import {
 } from 'class-validator';
 import { UserRole } from '../users/user.entity';
 
-export const SELF_SERVICE_ROLES = [UserRole.CREATOR, UserRole.RESPONDENT] as const;
+export const SELF_SERVICE_ROLES = [
+  UserRole.CREATOR,
+  UserRole.RESPONDENT,
+] as const;
 
 export class LoginDto {
   @ApiProperty({ example: 'you@example.com' })
@@ -22,6 +25,13 @@ export class LoginDto {
   @MinLength(1, { message: 'Password is required.' })
   @MaxLength(128)
   password: string;
+
+  /** hCaptcha response token; required only when the server has HCAPTCHA_SECRET (SMS-34). */
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  captchaToken?: string;
 }
 
 export class RegisterDto {
