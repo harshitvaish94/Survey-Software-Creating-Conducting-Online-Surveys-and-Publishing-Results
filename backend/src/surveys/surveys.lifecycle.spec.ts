@@ -29,7 +29,7 @@ describe('survey lifecycle (TC-Srv-05)', () => {
     setToday('2026-11-05');
     db = new FakeDb();
     surveys = new SurveysService(db.surveys as any, db.dataSource as any);
-    responses = new ResponsesService(db.surveys as any, db.responses as any);
+    responses = new ResponsesService(db.surveys as any, db.dataSource as any);
   });
 
   afterEach(() => {
