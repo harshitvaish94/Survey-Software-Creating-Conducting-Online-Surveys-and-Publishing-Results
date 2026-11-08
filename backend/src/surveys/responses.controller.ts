@@ -38,7 +38,7 @@ export function respondentToken(req: Request, res: Response): string {
   return token;
 }
 
-/** Anyone may answer a published survey; a logged-in respondent is recorded on the response. */
+/** Anyone may answer a published survey. Respondent identity is used only for duplicate detection and is not stored on the response. */
 @Public()
 @Controller('surveys/:surveyId/responses')
 export class ResponsesController {

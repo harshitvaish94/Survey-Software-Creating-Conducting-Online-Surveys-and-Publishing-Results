@@ -96,7 +96,7 @@ export class ResponsesService {
 
     // The response and its answers are written together or not at all.
     try {
-      return await this.save(surveyId, respondentId, fingerprint, answers);
+      return await this.save(surveyId, fingerprint, answers);
     } catch (err) {
       // Two submissions racing: the unique (surveyId, fingerprint) constraint stops the second.
       if (isUniqueViolation(err))
@@ -119,7 +119,6 @@ export class ResponsesService {
 
   private save(
     surveyId: number,
-    respondentId: number | null,
     fingerprint: string | null,
     answers: Record<string, AnswerValue>,
   ): Promise<{ id: number; submittedAt: Date }> {
@@ -131,7 +130,7 @@ export class ResponsesService {
       const responseRepo = manager.getRepository(SurveyResponse);
       const answerRepo = manager.getRepository(Answer);
       const saved = await responseRepo.save(
-        responseRepo.create({ surveyId, respondentId }),
+        responseRepo.create({ surveyId }),
       );
       for (const [questionId, value] of Object.entries(answers)) {
         await answerRepo.save(

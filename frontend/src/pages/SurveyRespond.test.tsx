@@ -39,6 +39,11 @@ describe('SurveyRespond', () => {
     expect(getSurveyBySlug).toHaveBeenCalledWith('abc123')
   })
 
+  it('tells respondents that their identity is not collected (SMS-28)', async () => {
+    renderPage()
+    expect(await screen.findByText(/Responses are anonymous: your name and email are not collected/)).toBeInTheDocument()
+  })
+
   it('blocks submission while a mandatory question is unanswered', async () => {
     renderPage()
     await userEvent.setup().click(await screen.findByRole('button', { name: 'Submit response' }))
