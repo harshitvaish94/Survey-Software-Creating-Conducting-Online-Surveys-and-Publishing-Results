@@ -33,6 +33,7 @@ test.describe.serial('creator and respondent journey', () => {
   const title = `E2E feedback ${Date.now()}`
   const question = 'How was the workshop?'
   let surveyId = 0
+  let shareLink = ''
 
   test('register and log in (TC-Auth-01)', async ({ page }) => {
     await register(page, creator)
@@ -49,7 +50,12 @@ test.describe.serial('creator and respondent journey', () => {
     const card = page.locator('.survey-card', { hasText: title })
     await expect(card).toBeVisible()
     await expect(card).toContainText('Published')
-    await expect(card.getByRole('link', { name: 'Take survey' })).toBeVisible()
+    const take = card.getByRole('link', { name: 'Take survey' })
+    await expect(take).toBeVisible()
+    // The link a creator shares (SMS-24 share slug), not the internal id.
+    shareLink = (await take.getAttribute('href')) ?? ''
+    expect(shareLink).toMatch(/^\/s\/[A-Za-z0-9_-]+$/)
+    expect(shareLink).not.toBe(`/s/${surveyId}`)
   })
 
   test('a logged-out respondent can take and submit the survey (TC-Resp-01)', async ({ browser }) => {
@@ -57,7 +63,7 @@ test.describe.serial('creator and respondent journey', () => {
     const context = await browser.newContext()
     const page = await context.newPage()
 
-    await page.goto(`/s/${surveyId}`)
+    await page.goto(shareLink)
     await expect(page.getByRole('heading', { name: title })).toBeVisible()
 
     // The question is required: submitting without an answer shows an error and stays on the page.
