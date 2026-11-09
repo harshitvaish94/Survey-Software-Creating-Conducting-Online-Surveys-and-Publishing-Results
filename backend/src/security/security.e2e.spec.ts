@@ -54,11 +54,9 @@ describe('HTTP security (SMS-33)', () => {
     expect(res.headers['x-content-type-options']).toBe('nosniff');
     expect(res.headers['x-frame-options']).toBe('SAMEORIGIN');
     expect(res.headers['strict-transport-security']).toMatch(/max-age=\d+/);
-    expect(res.headers['content-security-policy']).toContain(
-      "default-src 'self'",
-    );
-    expect(res.headers['content-security-policy']).toContain(
-      "frame-ancestors 'none'",
+    // JSON responses: nothing may be loaded, framed or submitted (SMS-39 ZAP findings)
+    expect(res.headers['content-security-policy']).toBe(
+      "default-src 'none';frame-ancestors 'none';base-uri 'none';form-action 'none'",
     );
     expect(res.headers['referrer-policy']).toBe('no-referrer');
     expect(res.headers['x-powered-by']).toBeUndefined();
@@ -117,5 +115,20 @@ describe('HTTP security (SMS-33)', () => {
           .send({ title: 'x'.repeat(201) })
       ).status,
     ).toBe(400);
+  });
+
+  it('gives only the Swagger UI page the policy it needs', async () => {
+    const { isSwaggerUi } = await import('../app.setup');
+    expect(isSwaggerUi('/api/docs')).toBe(true);
+    expect(isSwaggerUi('/api/docs/swagger-ui.css')).toBe(true);
+    expect(isSwaggerUi('/api/docs-json')).toBe(false);
+    expect(isSwaggerUi('/surveys')).toBe(false);
+    const res = await request(app.getHttpServer()).get('/api/docs/anything');
+    expect(res.headers['content-security-policy']).toContain(
+      "style-src 'self' 'unsafe-inline'",
+    );
+    expect(res.headers['content-security-policy']).toContain(
+      "frame-ancestors 'none'",
+    );
   });
 });

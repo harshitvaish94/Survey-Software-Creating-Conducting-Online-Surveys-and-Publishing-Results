@@ -79,8 +79,9 @@ export default function Dashboard() {
                   Edit survey
                 </Link>
                 {/* SMS-26: share / open the public respondent page once published */}
-                {survey.status === 'Published' && (
-                  <Link to={`/s/${survey.id}`} className="edit-hint">
+                {/* SMS-24: respondents open surveys by their share link, not by id */}
+                {survey.status === 'Published' && survey.slug && (
+                  <Link to={`/s/${survey.slug}`} className="edit-hint">
                     Take survey
                   </Link>
                 )}
