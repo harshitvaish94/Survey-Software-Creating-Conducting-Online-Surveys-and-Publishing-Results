@@ -26,3 +26,6 @@ dist-ssr
 # Playwright (SMS-38)
 playwright-report/
 test-results/
+
+# Test coverage reports (SMS-39)
+coverage

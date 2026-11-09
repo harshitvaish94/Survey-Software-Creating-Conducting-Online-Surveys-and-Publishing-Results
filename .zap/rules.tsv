@@ -1,0 +1,5 @@
+# SMS-39: ZAP rule overrides for .github/workflows/ci.yml.
+# Format: <rule id><TAB><IGNORE|INFO|WARN|FAIL><TAB><name and reason>
+# Every finding is reported (the scans do not fail the build); add a line here only
+# after reviewing a finding and recording why it does not apply.
+90003	IGNORE	(Sub Resource Integrity Attribute Missing) Reviewed 2026-11-09: the only match is the Google Fonts stylesheet, whose CSS differs per browser, so an integrity hash cannot be pinned. Self-host the fonts to remove this exception.

@@ -1,9 +1,36 @@
 import { ValidationPipe } from '@nestjs/common';
 import type { INestApplication } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
+import type { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import { applyRateLimits } from './security/rate-limit';
 import { SanitizePipe } from './security/sanitize';
+
+/** Content security policy for JSON responses: nothing may load or frame them. */
+export const API_CSP = {
+  defaultSrc: ["'none'"],
+  frameAncestors: ["'none'"],
+  baseUri: ["'none'"],
+  formAction: ["'none'"],
+};
+
+/** Swagger UI needs its own scripts, its inline styles and data: images. */
+export const DOCS_CSP = {
+  defaultSrc: ["'self'"],
+  scriptSrc: ["'self'"],
+  styleSrc: ["'self'", "'unsafe-inline'"],
+  imgSrc: ["'self'", 'data:'],
+  fontSrc: ["'self'"],
+  connectSrc: ["'self'"],
+  objectSrc: ["'none'"],
+  baseUri: ["'self'"],
+  formAction: ["'self'"],
+  frameAncestors: ["'none'"],
+};
+
+/** The Swagger UI page and its assets, but not the /api/docs-json document. */
+export const isSwaggerUi = (path: string) =>
+  path === '/api/docs' || path.startsWith('/api/docs/');
 
 /** FRONTEND_ORIGIN (comma-separated for several) plus the local development origins. */
 export function allowedOrigins(env: NodeJS.ProcessEnv = process.env): string[] {
@@ -24,22 +51,25 @@ export function allowedOrigins(env: NodeJS.ProcessEnv = process.env): string[] {
  * against exactly what production runs.
  */
 export function configureApp(app: INestApplication): INestApplication {
-  // SMS-33: security headers. The API returns JSON only, so the CSP can be strict;
-  // Swagger UI (/api/docs) needs its own scripts, styles and data: images.
+  // SMS-33 / SMS-39: security headers. The API only returns JSON, so its content
+  // security policy allows nothing at all. Only the Swagger UI page (/api/docs)
+  // gets a policy that lets it load its own scripts and inline styles.
   app.use(
     helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          scriptSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
-          imgSrc: ["'self'", 'data:'],
-          objectSrc: ["'none'"],
-          frameAncestors: ["'none'"],
-        },
-      },
+      contentSecurityPolicy: false,
       crossOriginResourcePolicy: { policy: 'same-site' },
     }),
+  );
+  const apiCsp = helmet.contentSecurityPolicy({
+    useDefaults: false,
+    directives: API_CSP,
+  });
+  const docsCsp = helmet.contentSecurityPolicy({
+    useDefaults: false,
+    directives: DOCS_CSP,
+  });
+  app.use((req: Request, res: Response, next: NextFunction) =>
+    isSwaggerUi(req.path) ? docsCsp(req, res, next) : apiCsp(req, res, next),
   );
 
   // SMS-34: per-IP rate limits on login, register, password reset and submissions

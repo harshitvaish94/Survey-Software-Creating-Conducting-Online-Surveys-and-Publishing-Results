@@ -1,0 +1,194 @@
+name: CI
+
+# SMS-10 / SMS-39: lint, build and test both apps on every pull request and push to main,
+# then scan the running app with OWASP ZAP and check SonarCloud's quality gate.
+# The CD workflow (cd.yml) waits for this workflow, named "CI", to succeed on main.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 22
+  DB_HOST: localhost
+  DB_PORT: 5432
+  DB_USER: sms
+  DB_PASSWORD: sms_password
+  DB_NAME: sms_db
+
+jobs:
+  backend:
+    name: Backend (lint, build, tests, migrations)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sms
+          POSTGRES_PASSWORD: sms_password
+          POSTGRES_DB: sms_db
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U sms -d sms_db"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - name: Unit tests with coverage (fails under 80 %)
+        run: npx vitest run --coverage
+      - name: Migrations run on an empty database
+        run: npx typeorm migration:run -d dist/database/data-source.js
+      - name: Schema matches the entities (no missing migration)
+        run: |
+          out=$(npx typeorm schema:log -d dist/database/data-source.js)
+          echo "$out"
+          echo "$out" | grep -q "Your schema is up to date" || {
+            echo "::error::An entity changed without a migration. Run: npm run migration:generate -- src/database/migrations/<Name>"
+            exit 1
+          }
+      - name: Database tests (TC-Res-01, TC-Sec-04)
+        env:
+          RESULTS_DB_TEST: '1'
+          SECURITY_DB_TEST: '1'
+        run: npx vitest run src/results/results.sql.spec.ts src/security/security.db.spec.ts
+      - uses: actions/upload-artifact@v7
+        with:
+          name: backend-coverage
+          path: backend/coverage/lcov.info
+          retention-days: 7
+
+  frontend:
+    name: Frontend (lint, types, tests, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - name: Unit tests with coverage
+        run: npx vitest run --coverage
+      - name: Type-check and build
+        run: npm run build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/lcov.info
+          retention-days: 7
+
+  zap:
+    name: OWASP ZAP scan (SMS-39)
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sms
+          POSTGRES_PASSWORD: sms_password
+          POSTGRES_DB: sms_db
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U sms -d sms_db"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      # The scanner sends hundreds of requests; don't let the rate limits hide real findings.
+      RATE_LIMIT_ENABLED: 'false'
+      JWT_SECRET: ci-only-zap-scan-secret
+      FRONTEND_ORIGIN: http://localhost:4173
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Start the backend
+        working-directory: backend
+        run: |
+          npm ci
+          npm run build
+          nohup node dist/main > ../backend.log 2>&1 &
+      - name: Start the frontend (the production nginx container from frontend/Dockerfile)
+        run: |
+          docker build -t sms-frontend frontend
+          docker run -d --name sms-frontend -p 4173:80 \
+            -e API_ORIGIN=http://localhost:3000 sms-frontend
+      - name: Wait for both apps
+        run: bash scripts/smoke-test.sh http://localhost:3000 http://localhost:4173
+      - name: ZAP API scan (every endpoint from the OpenAPI document)
+        uses: zaproxy/action-api-scan@v0.10.0
+        with:
+          target: http://localhost:3000/api/docs-json
+          format: openapi
+          rules_file_name: .zap/rules.tsv
+          cmd_options: -a
+          allow_issue_writing: false
+          fail_action: false
+          artifact_name: zap-api-report
+      - name: ZAP baseline scan (frontend)
+        uses: zaproxy/action-baseline@v0.15.0
+        with:
+          target: http://localhost:4173
+          rules_file_name: .zap/rules.tsv
+          allow_issue_writing: false
+          fail_action: false
+          artifact_name: zap-frontend-report
+      - name: App logs
+        if: always()
+        run: |
+          tail -n 100 backend.log
+          docker logs sms-frontend 2>&1 | tail -n 50
+
+  sonarcloud:
+    name: SonarCloud quality gate (SMS-39)
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - name: Skip when SonarCloud is not set up yet
+        if: env.SONAR_TOKEN == ''
+        run: echo "::warning::SONAR_TOKEN secret is not set, so SonarCloud was skipped. See sonar-project.properties."
+      - uses: actions/checkout@v7
+        if: env.SONAR_TOKEN != ''
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v8
+        if: env.SONAR_TOKEN != ''
+        with:
+          name: backend-coverage
+          path: backend/coverage
+      - uses: actions/download-artifact@v8
+        if: env.SONAR_TOKEN != ''
+        with:
+          name: frontend-coverage
+          path: frontend/coverage
+      - name: Scan and wait for the quality gate
+        if: env.SONAR_TOKEN != ''
+        uses: SonarSource/sonarqube-scan-action@v8
+        with:
+          args: -Dsonar.qualitygate.wait=true

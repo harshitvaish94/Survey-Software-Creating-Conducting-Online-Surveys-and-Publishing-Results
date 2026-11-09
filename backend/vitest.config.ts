@@ -9,6 +9,8 @@ export default defineConfig({
     include: ['src/**/*.spec.ts'],
     coverage: {
       provider: 'v8',
+      // lcov for SonarCloud (SMS-39), text for the terminal
+      reporter: ['text', 'lcov'],
       include: ['src/**/*.ts'],
       exclude: ['src/main.ts', 'src/**/*.module.ts', 'src/**/*.spec.ts', 'src/testing/**', 'src/database/**'],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },
