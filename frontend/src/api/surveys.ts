@@ -1,4 +1,4 @@
-import { request } from './http'
+import { API_BASE, request } from './http'
 import { toQuestionPayload } from '../lib/questions'
 import type {
   EditorQuestion,
@@ -128,3 +128,29 @@ export interface SurveyResults {
 
 export const getResults = (id: number) =>
   request<SurveyResults>(`/surveys/${id}/results`)
+
+
+export async function exportResults(
+  id: number,
+  format: 'csv' | 'pdf',
+): Promise<void> {
+  const response = await fetch(
+    `${API_BASE}/surveys/${id}/export?format=${format}`,
+    { credentials: 'include' },
+  )
+
+  if (!response.ok) {
+    throw new Error(`Export failed (${response.status})`)
+  }
+
+  const blob = await response.blob()
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+
+  link.href = url
+  link.download = `survey-${id}-results.${format}`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
