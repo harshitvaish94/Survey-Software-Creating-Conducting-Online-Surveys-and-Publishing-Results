@@ -10,7 +10,7 @@ FROM nginx:1.27-alpine
 COPY nginx.conf /etc/nginx/templates/default.conf.template
 # Where the browser may send API requests (Content-Security-Policy connect-src).
 # Set it to the real API address when deploying, e.g. API_ORIGIN=https://api.example.com
-ENV API_ORIGIN="https: http://localhost:3000"
+ENV API_ORIGIN="http://localhost:3000"
 COPY --from=build /app/dist /usr/share/nginx/html
 # At start-up, tells the app where the API is (same image for staging and production).
 # Set BACKEND_URL (e.g. https://sms-api.onrender.com) to forward /api/ to the backend,
