@@ -57,6 +57,7 @@ nginx/              Nginx reverse proxy config for HTTPS (certs go in nginx/cert
 scripts/            Smoke test, dev-certificate generator, TLS check (TC-Sec-01)
 .github/workflows/  CI, CD and E2E pipelines
 .zap/               OWASP ZAP scan rules
+jira-screenshots/   Jira evidence: dashboard, backlogs, sprint progress, burndown charts
 docker-compose.yml        PostgreSQL + Mailpit for local development
 docker-compose.https.yml  Nginx HTTPS proxy for local TLS testing
 ```
@@ -142,6 +143,58 @@ cd frontend && npx playwright install && npm run e2e
 - **CD** (`.github/workflows/cd.yml`), after CI passes on `main`: builds and pushes backend and frontend Docker images to GitHub Container Registry, deploys to staging, runs a smoke test, then deploys to production.
 - **E2E** (`.github/workflows/e2e.yml`): Playwright tests against the deployed environment.
 
+## Project management (Jira)
+
+Work was planned and tracked in Jira (project **Survey Management System, key SMS**) using Scrum. All screenshots are stored in the [`jira-screenshots/`](jira-screenshots/) folder.
+
+### Sprint summary
+
+| Sprint | Dates | Sprint goal | Scope |
+|---|---|---|---|
+| Sprint 1 | 27 Oct 2026 – 31 Oct 2026 | Working login, survey creation with questions, and CI pipeline running | 14 stories (SMS-9 to SMS-22), 50 story points |
+| Sprint 2 | 2 Nov 2026 – 10 Nov 2026 | Working end-to-end survey flow (create, share, respond, view results) deployed through CI/CD | 68 story points (SMS-23 onwards, up to SMS-42) |
+
+### Screenshots
+
+| File | What it shows | Status |
+|---|---|---|
+| `01-jira-dashboard.png` | Team 13 dashboard: created vs resolved chart, issues by assignee, and filter results for all SMS issues | Done |
+| `02a-product-backlog.png`, `02b-product-backlog.png` | Product backlog: all epics and stories (SMS-1 to SMS-42) before sprint planning | Still to take |
+| `03-sprint1-backlog.png` | Sprint 1 backlog: stories committed with their story points | Done |
+| `03-sprint2-backlog.png` | Sprint 2 backlog: stories committed with their story points and assignees | Done |
+| `04-sprint1-progress.png` | Sprint 1 progress: board and status of work at the end of the sprint | Done |
+| `04-sprint2-progress.png` | Sprint 2 progress: board and status of work at the end of the sprint | Done |
+| `05-burndown-sprint1.png` | Sprint 1 burndown chart (remaining story points vs guideline) | Done |
+| `05-burndown-sprint2.png` | Sprint 2 burndown chart (remaining story points vs guideline) | Done |
+
+### Previews
+
+**Jira dashboard**
+
+![Jira dashboard](jira-screenshots/01-jira-dashboard.png)
+
+**Product backlog**
+
+![Product backlog, part 1](jira-screenshots/02a-product-backlog.png)
+![Product backlog, part 2](jira-screenshots/02b-product-backlog.png)
+
+**Sprint 1**
+
+![Sprint 1 backlog](jira-screenshots/03-sprint1-backlog.png)
+![Sprint 1 progress](jira-screenshots/04-sprint1-progress.png)
+![Sprint 1 burndown](jira-screenshots/05-burndown-sprint1.png)
+
+**Sprint 2**
+
+![Sprint 2 backlog](jira-screenshots/03-sprint2-backlog.png)
+![Sprint 2 progress](jira-screenshots/04-sprint2-progress.png)
+![Sprint 2 burndown](jira-screenshots/05-burndown-sprint2.png)
+
+### Notes on the burndown charts
+
+- **Sprint 1:** the sprint started on 27 Oct, but the 50 story points were added to the sprint on 28 Oct, so the remaining-work line starts at 50 on that day and then burns down to 0 by 31 Oct.
+- **Sprint 2:** the sprint started with 68 story points and burned down to 0 by 10 Nov.
+
 ## Project documents and media
 
 | File | Description |
@@ -151,6 +204,7 @@ cd frontend && npx playwright install && npm run e2e
 | `TEAM13_Test_Plan_Survey_Management.docx` | Software Test Plan (test cases and acceptance criteria) |
 | `SMS-40_Deviation_Report_and_Updated_RTM.docx` | Implementation deviations and updated traceability matrix |
 | `Sprint1_demo_video.mp4`, `Sprint2_demo_video.mp4` | Sprint demo videos |
+| `jira-screenshots/` | Jira dashboard, backlogs, sprint progress and burndown charts |
 
 ## Known limitations
 
