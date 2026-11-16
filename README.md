@@ -159,7 +159,7 @@ Work was planned and tracked in Jira (project **Survey Management System, key SM
 | File | What it shows | Status |
 |---|---|---|
 | `01-jira-dashboard.png` | Team 13 dashboard: created vs resolved chart, issues by assignee, and filter results for all SMS issues | Done |
-| `02a-product-backlog.png`, `02b-product-backlog.png` | Product backlog: all epics and stories (SMS-1 to SMS-42) before sprint planning | Still to take |
+| `02a-product-backlog.png`, `02b-product-backlog.png` | Product backlog: all epics and stories (SMS-1 to SMS-42) before sprint planning | Done |
 | `03-sprint1-backlog.png` | Sprint 1 backlog: stories committed with their story points | Done |
 | `03-sprint2-backlog.png` | Sprint 2 backlog: stories committed with their story points and assignees | Done |
 | `04-sprint1-progress.png` | Sprint 1 progress: board and status of work at the end of the sprint | Done |
