@@ -51,10 +51,34 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.SHA }}
-      - name: Trigger staging deploy
+      - name: Check the staging settings
+        env:
+          BACKEND_DEPLOY_HOOK: ${{ secrets.BACKEND_DEPLOY_HOOK }}
+          FRONTEND_DEPLOY_HOOK: ${{ secrets.FRONTEND_DEPLOY_HOOK }}
+          API_URL: ${{ vars.API_URL }}
+          WEB_URL: ${{ vars.WEB_URL }}
         run: |
-          curl -fsS -X POST "${{ secrets.BACKEND_DEPLOY_HOOK }}"
-          curl -fsS -X POST "${{ secrets.FRONTEND_DEPLOY_HOOK }}"
+          missing=0
+          for name in BACKEND_DEPLOY_HOOK FRONTEND_DEPLOY_HOOK; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Secret $name is not set for the staging environment (Settings > Environments > staging > Environment secrets). See docs/DEPLOYMENT.md."
+              missing=1
+            fi
+          done
+          for name in API_URL WEB_URL; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Variable $name is not set for the staging environment (Settings > Environments > staging > Environment variables). See docs/DEPLOYMENT.md."
+              missing=1
+            fi
+          done
+          exit $missing
+      - name: Trigger staging deploy
+        env:
+          BACKEND_DEPLOY_HOOK: ${{ secrets.BACKEND_DEPLOY_HOOK }}
+          FRONTEND_DEPLOY_HOOK: ${{ secrets.FRONTEND_DEPLOY_HOOK }}
+        run: |
+          curl -fsS -X POST "$BACKEND_DEPLOY_HOOK"
+          curl -fsS -X POST "$FRONTEND_DEPLOY_HOOK"
       - name: Smoke test staging
         run: bash scripts/smoke-test.sh "${{ vars.API_URL }}" "${{ vars.WEB_URL }}"
 
@@ -66,9 +90,33 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.SHA }}
-      - name: Trigger production deploy
+      - name: Check the production settings
+        env:
+          BACKEND_DEPLOY_HOOK: ${{ secrets.BACKEND_DEPLOY_HOOK }}
+          FRONTEND_DEPLOY_HOOK: ${{ secrets.FRONTEND_DEPLOY_HOOK }}
+          API_URL: ${{ vars.API_URL }}
+          WEB_URL: ${{ vars.WEB_URL }}
         run: |
-          curl -fsS -X POST "${{ secrets.BACKEND_DEPLOY_HOOK }}"
-          curl -fsS -X POST "${{ secrets.FRONTEND_DEPLOY_HOOK }}"
+          missing=0
+          for name in BACKEND_DEPLOY_HOOK FRONTEND_DEPLOY_HOOK; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Secret $name is not set for the production environment (Settings > Environments > production > Environment secrets). See docs/DEPLOYMENT.md."
+              missing=1
+            fi
+          done
+          for name in API_URL WEB_URL; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Variable $name is not set for the production environment (Settings > Environments > production > Environment variables). See docs/DEPLOYMENT.md."
+              missing=1
+            fi
+          done
+          exit $missing
+      - name: Trigger production deploy
+        env:
+          BACKEND_DEPLOY_HOOK: ${{ secrets.BACKEND_DEPLOY_HOOK }}
+          FRONTEND_DEPLOY_HOOK: ${{ secrets.FRONTEND_DEPLOY_HOOK }}
+        run: |
+          curl -fsS -X POST "$BACKEND_DEPLOY_HOOK"
+          curl -fsS -X POST "$FRONTEND_DEPLOY_HOOK"
       - name: Smoke test production
         run: bash scripts/smoke-test.sh "${{ vars.API_URL }}" "${{ vars.WEB_URL }}"

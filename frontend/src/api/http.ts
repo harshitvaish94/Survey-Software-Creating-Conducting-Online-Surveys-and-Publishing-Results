@@ -1,7 +1,31 @@
-// Automatically detect the backend address based on the frontend URL.
-export const API_BASE: string =
-  (import.meta.env.VITE_API_URL as string | undefined) ??
-  `${window.location.protocol}//${window.location.hostname}:3000`
+declare global {
+  interface Window {
+    /** Written by public/config.js; the production container fills in apiUrl from API_URL. */
+    __APP_CONFIG__?: { apiUrl?: string }
+  }
+}
+
+/**
+ * Where the API lives, in order of preference:
+ * 1. apiUrl from config.js (set when the container starts, so one image works everywhere)
+ * 2. VITE_API_URL at build time
+ * 3. this host on port 3000 (local development)
+ */
+export function resolveApiBase(
+  config: { apiUrl?: string } | undefined,
+  buildTimeUrl: string | undefined,
+  location: Pick<Location, 'protocol' | 'hostname'>,
+): string {
+  const configured = config?.apiUrl?.trim() || buildTimeUrl?.trim()
+  if (configured) return configured.replace(/\/+$/, '')
+  return `${location.protocol}//${location.hostname}:3000`
+}
+
+export const API_BASE: string = resolveApiBase(
+  window.__APP_CONFIG__,
+  import.meta.env.VITE_API_URL as string | undefined,
+  window.location,
+)
 
 export class ApiError extends Error {
   status: number
