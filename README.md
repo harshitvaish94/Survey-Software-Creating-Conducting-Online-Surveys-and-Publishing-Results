@@ -4,12 +4,12 @@ A web application for creating surveys, sharing them by link or QR code, collect
 
 **Team 13** · Agile (Scrum) · Version 1.1 · November 2026
 
-| Name | Branch / Section |
-|---|---|
-| Harshit Vaish | AIML – B Section |
-| Nakka Gopya | AIML – B Section |
-| Devika N | AIML – B Section |
-| Bhavya K | AIML – B Section |
+| Name | Branch / Section | SRN |
+|---|---|---|
+| Harshit Vaish | AIML – B Section | PES1UG24AM116 |
+| Nakka Gopya | AIML – B Section | PES1UG24AM107 |
+| Devika N | AIML – B Section | PES1UG24AM080 |
+| Bhavya K | AIML – B Section | PES1UG24AM066 |
 
 ---
 
